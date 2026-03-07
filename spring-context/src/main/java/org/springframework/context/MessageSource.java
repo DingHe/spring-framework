@@ -37,6 +37,11 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.context.support.ResourceBundleMessageSource
  * @see org.springframework.context.support.ReloadableResourceBundleMessageSource
  */
+// MessageSource 是 Spring 框架中用于**国际化（i18n）**的核心接口。它定义了如何根据不同的区域设置（Locale）解析文本消息、错误提示或标签内容，并支持参数插值（Parameterization）。
+// MessageSource 的主要作用是实现文本内容与代码的分离，并支持多语言环境：
+// 国际化支持：根据用户的 Locale（如中文、英文、德文）从不同的资源文件（如 .properties）中提取对应的翻译内容。
+// 参数化消息：支持在模板字符串中使用占位符（如 {0}, {1,date}），并在运行时动态填充变量。
+// 统一消息管理：通过 ApplicationContext 继承该接口，使得整个 Spring 应用可以统一通过“消息代码（Code）”来获取提示信息，而无需硬编码字符串。
 public interface MessageSource {
 
 	/**
@@ -54,6 +59,9 @@ public interface MessageSource {
 	 * @see #getMessage(MessageSourceResolvable, Locale)
 	 * @see java.text.MessageFormat
 	 */
+	// 方法作用：尝试解析消息，如果未找到匹配的 code，则返回提供的默认消息。
+	// code：消息的唯一标识符（键）。建议使用限定类名或包名作为前缀（如 login.error.invalid_user）。
+	// args：用于填充消息占位符的参数数组。遵循 java.text.MessageFormat 标准。如果消息中没有占位符，传 null。
 	@Nullable
 	String getMessage(String code, @Nullable Object[] args, @Nullable String defaultMessage, Locale locale);
 
@@ -71,6 +79,7 @@ public interface MessageSource {
 	 * @see #getMessage(MessageSourceResolvable, Locale)
 	 * @see java.text.MessageFormat
 	 */
+	// 方法作用：强制解析消息，如果找不到对应的 code 则抛出异常。
 	String getMessage(String code, @Nullable Object[] args, Locale locale) throws NoSuchMessageException;
 
 	/**
@@ -91,6 +100,7 @@ public interface MessageSource {
 	 * @see MessageSourceResolvable#getDefaultMessage()
 	 * @see java.text.MessageFormat
 	 */
+	// 方法作用：通过一个封装了所有属性的对象（MessageSourceResolvable）来解析消息。
 	String getMessage(MessageSourceResolvable resolvable, Locale locale) throws NoSuchMessageException;
 
 }

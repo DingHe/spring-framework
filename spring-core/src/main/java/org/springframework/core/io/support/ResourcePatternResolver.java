@@ -55,6 +55,12 @@ import org.springframework.core.io.ResourceLoader;
  * @see org.springframework.context.ApplicationContext
  * @see org.springframework.context.ResourceLoaderAware
  */
+// ResourcePatternResolver 是 Spring 框架中用于资源加载的高级接口。它继承了ResourceLoader，并将其功能从“加载单个资源”扩展到了“批量解析匹配资源”。
+// 如果说 ResourceLoader 是一个精确的“定位器”，那么 ResourcePatternResolver 就是一个强大的“资源搜索引擎”。
+// 支持模式匹配（Pattern Matching）：它支持使用通配符（如 Ant 风格的路径 /**/*.xml）来一次性搜索多个资源。
+// 支持全路径搜索：通过特殊的协议前缀，它可以跨越多个 JAR 包和文件系统目录查找同名资源。
+// ApplicationContext 的核心能力：所有的 ApplicationContext 实例都间接实现了这个接口。这也是为什么你可以在 Spring 中使用 classpath*:bean-*.xml 这种写法来加载配置。
+// 独立实现：它拥有一个非常著名的独立实现类 PathMatchingResourcePatternResolver，可以在不启动 Spring 容器的情况下单独使用。
 public interface ResourcePatternResolver extends ResourceLoader {
 
 	/**
@@ -67,6 +73,7 @@ public interface ResourcePatternResolver extends ResourceLoader {
 	 * prefix have been expanded to include the module path as well as the class path.
 	 * @see org.springframework.core.io.ResourceLoader#CLASSPATH_URL_PREFIX
 	 */
+	// 作用：定义“加载所有匹配项”的类路径伪 URL 前缀。
 	String CLASSPATH_ALL_URL_PREFIX = "classpath*:";
 
 	/**
@@ -78,6 +85,7 @@ public interface ResourcePatternResolver extends ResourceLoader {
 	 * @return the corresponding {@code Resource} objects
 	 * @throws IOException in case of I/O errors
 	 */
+	// 作用：将给定的位置模式（Location Pattern）解析为一组 Resource 对象。
 	Resource[] getResources(String locationPattern) throws IOException;
 
 }

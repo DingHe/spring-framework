@@ -42,6 +42,11 @@ import org.springframework.lang.Nullable;
  * @author Sam Brannen
  * @since 03.11.2003
  */
+// ConfigurableApplicationContext 是 Spring 容器设计的核心 SPI（Service Provider Interface）。其主要作用包括：
+// 配置生命周期：定义了容器启动（refresh）和关闭（close）的标准操作。
+// 写操作入口：ApplicationContext 接口中的方法大多是只读的，而这个接口提供了大量的 set 和 add 方法，用于在容器启动前注入配置（如 Parent, Environment, Processors）。
+// 状态管理：提供了检查容器是否处于活跃状态（isActive）以及注册 JVM 关闭钩子（registerShutdownHook）的能力。
+// 组件访问：允许直接访问底层的 BeanFactory 和 Environment 的可配置版本。
 public interface ConfigurableApplicationContext extends ApplicationContext, Lifecycle, Closeable {
 
 	/**
@@ -51,6 +56,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @see org.springframework.web.context.ContextLoader#CONFIG_LOCATION_PARAM
 	 * @see org.springframework.web.servlet.FrameworkServlet#setContextConfigLocation
 	 */
+	// 配置路径的分隔符（逗号、分号、空格、制表符、换行符）。用于将一个长字符串拆分为多个配置文件路径。
 	String CONFIG_LOCATION_DELIMITERS = ",; \t\n";
 
 	/**
@@ -59,6 +65,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @since 3.0
 	 * @see org.springframework.core.convert.ConversionService
 	 */
+	// 类型转换服务 ConversionService 在容器中的 Bean 名称。
 	String CONVERSION_SERVICE_BEAN_NAME = "conversionService";
 
 	/**
@@ -68,30 +75,35 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @since 2.5
 	 * @see org.springframework.instrument.classloading.LoadTimeWeaver
 	 */
+	// 加载时织入器 LoadTimeWeaver 的 Bean 名称，用于 AOP 的类加载期增强。
 	String LOAD_TIME_WEAVER_BEAN_NAME = "loadTimeWeaver";
 
 	/**
 	 * Name of the {@link Environment} bean in the factory.
 	 * @since 3.1
 	 */
+	// 环境对象 Environment 的 Bean 名称。
 	String ENVIRONMENT_BEAN_NAME = "environment";
 
 	/**
 	 * Name of the System properties bean in the factory.
 	 * @see java.lang.System#getProperties()
 	 */
+	// JVM 系统属性（System.getProperties）在容器中的 Bean 名称。
 	String SYSTEM_PROPERTIES_BEAN_NAME = "systemProperties";
 
 	/**
 	 * Name of the System environment bean in the factory.
 	 * @see java.lang.System#getenv()
 	 */
+	// 操作系统环境变量（System.getenv）在容器中的 Bean 名称。
 	String SYSTEM_ENVIRONMENT_BEAN_NAME = "systemEnvironment";
 
 	/**
 	 * Name of the {@link ApplicationStartup} bean in the factory.
 	 * @since 5.3
 	 */
+	// 用于监控启动步骤和性能指标的 ApplicationStartup Bean 名称。
 	String APPLICATION_STARTUP_BEAN_NAME = "applicationStartup";
 
 	/**
@@ -100,6 +112,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @since 5.2
 	 * @see #registerShutdownHook()
 	 */
+	// Spring 注册到 JVM 的关闭钩子线程的名字：SpringContextShutdownHook。
 	String SHUTDOWN_HOOK_THREAD_NAME = "SpringContextShutdownHook";
 
 
@@ -107,6 +120,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * Set the unique id of this application context.
 	 * @since 3.0
 	 */
+	// 设置容器的唯一 ID。
 	void setId(String id);
 
 	/**
@@ -117,6 +131,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @param parent the parent context
 	 * @see org.springframework.web.context.ConfigurableWebApplicationContext
 	 */
+	// 设置父容器。这构建了 Spring 的层级架构。
 	void setParent(@Nullable ApplicationContext parent);
 
 	/**
@@ -124,6 +139,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @param environment the new environment
 	 * @since 3.1
 	 */
+	// 设置容器的环境对象。
 	void setEnvironment(ConfigurableEnvironment environment);
 
 	/**
@@ -131,6 +147,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * form, allowing for further customization.
 	 * @since 3.1
 	 */
+	// 获取可配置的环境对象。相比父接口返回的 Environment，它允许你修改属性源（PropertySources）和 Profiles。
 	@Override
 	ConfigurableEnvironment getEnvironment();
 
@@ -141,12 +158,14 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @param applicationStartup the new context event factory
 	 * @since 5.3
 	 */
+	// 设置启动监控器，用于记录启动阶段的度量数据（如各阶段耗时）。
 	void setApplicationStartup(ApplicationStartup applicationStartup);
 
 	/**
 	 * Return the {@link ApplicationStartup} for this application context.
 	 * @since 5.3
 	 */
+	// 获取当前的启动监控器。
 	ApplicationStartup getApplicationStartup();
 
 	/**
@@ -155,6 +174,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * bean definitions get evaluated. To be invoked during context configuration.
 	 * @param postProcessor the factory processor to register
 	 */
+	// 注册“Bean 工厂后置处理器”。这些处理器会在 Bean 实例化之前修改 Bean 的定义（BeanDefinition）。
 	void addBeanFactoryPostProcessor(BeanFactoryPostProcessor postProcessor);
 
 	/**
@@ -167,6 +187,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @see org.springframework.context.event.ContextRefreshedEvent
 	 * @see org.springframework.context.event.ContextClosedEvent
 	 */
+	// 动态添加事件监听器。
 	void addApplicationListener(ApplicationListener<?> listener);
 
 	/**
@@ -175,6 +196,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @param listener the ApplicationListener to deregister
 	 * @since 6.0
 	 */
+	// 移除已注册的监听器。
 	void removeApplicationListener(ApplicationListener<?> listener);
 
 	/**
@@ -184,6 +206,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @see org.springframework.core.io.DefaultResourceLoader#DefaultResourceLoader(ClassLoader)
 	 * @see org.springframework.beans.factory.config.ConfigurableBeanFactory#setBeanClassLoader
 	 */
+	// 设置用于加载类路径资源和 Bean 类的类加载器。
 	void setClassLoader(ClassLoader classLoader);
 
 	/**
@@ -193,6 +216,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * resolution rules. It may therefore also override any default rules.
 	 * @since 4.3
 	 */
+	// 注册自定义协议解析器，允许 Spring 处理自定义的资源路径（如 myproto://path）。
 	void addProtocolResolver(ProtocolResolver resolver);
 
 	/**
@@ -206,6 +230,8 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @throws IllegalStateException if already initialized and multiple refresh
 	 * attempts are not supported
 	 */
+	// 最重要的核心方法。
+	// 加载配置，创建 BeanFactory，实例化所有的单例 Bean。如果启动失败，它会销毁已创建的 Bean 以释放资源。
 	void refresh() throws BeansException, IllegalStateException;
 
 	/**
@@ -218,6 +244,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @see java.lang.Runtime#addShutdownHook
 	 * @see #close()
 	 */
+	// 在 JVM 中注册一个关闭钩子（Shutdown Hook）。当 JVM 退出时，会自动调用 Spring 容器的 close() 方法，确保优雅停机。
 	void registerShutdownHook();
 
 	/**
@@ -228,6 +255,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * <p>This method can be called multiple times without side effects: Subsequent
 	 * {@code close} calls on an already closed context will be ignored.
 	 */
+	// 关闭容器，销毁所有单例 Bean，释放资源和锁。
 	@Override
 	void close();
 
@@ -239,6 +267,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @see #close()
 	 * @see #getBeanFactory()
 	 */
+	// 判断容器是否处于活跃状态（即 refresh() 已成功且未 close()）。
 	boolean isActive();
 
 	/**
@@ -260,6 +289,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	 * @see #close()
 	 * @see #addBeanFactoryPostProcessor
 	 */
+	// 返回内部持有的底层 Bean 工厂。这是进阶开发者手动操作 Bean 定义或检查容器状态的终极入口
 	ConfigurableListableBeanFactory getBeanFactory() throws IllegalStateException;
 
 }

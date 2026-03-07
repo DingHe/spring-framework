@@ -47,6 +47,10 @@ package org.springframework.context;
  * @see org.springframework.jms.listener.AbstractMessageListenerContainer
  * @see org.springframework.scheduling.quartz.SchedulerFactoryBean
  */
+// Lifecycle 接口定义了启动和停止组件的标准方法。它的核心作用包括：
+// 运行时状态控制：允许在应用程序运行期间（而不是仅仅在初始化阶段）手动启动、停止或重启特定的 Bean 或整个容器。
+// 管理异步处理：典型的用例是控制后台任务、消息监听器（如 JMS Listener）或定时调度任务（如 Quartz Scheduler）。
+// 容器级信号传递：当一个容器（如 ApplicationContext）收到启动或停止信号时，它会将这些信号传播给所有实现了该接口的顶级单例（top-level singleton）Bean。
 public interface Lifecycle {
 
 	/**
@@ -56,6 +60,7 @@ public interface Lifecycle {
 	 * components that apply.
 	 * @see SmartLifecycle#isAutoStartup()
 	 */
+	// 启动组件。
 	void start();
 
 	/**
@@ -73,6 +78,7 @@ public interface Lifecycle {
 	 * @see SmartLifecycle#stop(Runnable)
 	 * @see org.springframework.beans.factory.DisposableBean#destroy()
 	 */
+	// 停止组件。
 	void stop();
 
 	/**
@@ -81,6 +87,7 @@ public interface Lifecycle {
 	 * components that apply are currently running.
 	 * @return whether the component is currently running
 	 */
+	// 检查组件当前是否正在运行。
 	boolean isRunning();
 
 }

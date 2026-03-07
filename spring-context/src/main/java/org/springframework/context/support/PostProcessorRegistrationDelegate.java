@@ -61,7 +61,11 @@ final class PostProcessorRegistrationDelegate {
 	private PostProcessorRegistrationDelegate() {
 	}
 
-
+	// Spring 启动过程中逻辑最复杂、地位最高的方法之一。
+	// 它的核心任务是：实例化并执行所有的 BeanFactoryPostProcessor。
+	// 为了保证配置的正确性，Spring 在这里设计了严密的优先级执行顺序。我们可以将此方法分为两个大阶段：
+	// 阶段一：执行 BeanDefinitionRegistryPostProcessor（允许在运行时注册新的 Bean 定义）。
+	// 阶段二：执行普通的 BeanFactoryPostProcessor（只允许修改已有的 Bean 定义）。
 	public static void invokeBeanFactoryPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, List<BeanFactoryPostProcessor> beanFactoryPostProcessors) {
 
@@ -80,17 +84,24 @@ final class PostProcessorRegistrationDelegate {
 
 		// Invoke BeanDefinitionRegistryPostProcessors first, if any.
 		Set<String> processedBeans = new HashSet<>();
-
+		// 第一阶段：处理 BeanDefinitionRegistryPostProcessor
+		// 判断当前的 beanFactory 是否支持 Bean 定义注册 接口。
+		// 如果支持，说明容器可以在运行时接受新的 BeanDefinition（Bean 蓝图）。
 		if (beanFactory instanceof BeanDefinitionRegistry registry) {
+			// 存放普通的工厂后置处理器（只能修改 Bean 定义，不能注册 Bean 定义）。
 			List<BeanFactoryPostProcessor> regularPostProcessors = new ArrayList<>();
+			// 存放具有注册功能的后置处理器（继承自 BeanFactoryPostProcessor，但功能更强）
 			List<BeanDefinitionRegistryPostProcessor> registryProcessors = new ArrayList<>();
-
+			// 遍历 beanFactoryPostProcessors 集合。
+			// 这个集合里的对象是开发者通过 context.addBeanFactoryPostProcessor(new MyProcessor()) 这种硬编码方式手动添加的，而不是通过 XML 或注解由 Spring 自动扫描到的。
 			for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
+				// 判断：当前这个手动添加的处理器是不是“注册型”处理器？
 				if (postProcessor instanceof BeanDefinitionRegistryPostProcessor registryProcessor) {
 					registryProcessor.postProcessBeanDefinitionRegistry(registry);
 					registryProcessors.add(registryProcessor);
 				}
 				else {
+					// 如果是普通的处理器，先存入 regularPostProcessors 列表，等到后面的阶段再统一执行。
 					regularPostProcessors.add(postProcessor);
 				}
 			}
@@ -99,17 +110,23 @@ final class PostProcessorRegistrationDelegate {
 			// uninitialized to let the bean factory post-processors apply to them!
 			// Separate between BeanDefinitionRegistryPostProcessors that implement
 			// PriorityOrdered, Ordered, and the rest.
+			// 用于存放当前这一轮次（如 PriorityOrdered 轮次）筛选出来的处理器。
 			List<BeanDefinitionRegistryPostProcessor> currentRegistryProcessors = new ArrayList<>();
 
 			// First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
+			// 去工厂里“搜寻”所有实现了 BeanDefinitionRegistryPostProcessor 接口的 Bean 的名字。注意此时还没实例化 Bean，只是拿到了名字。
 			String[] postProcessorNames =
 					beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
 			for (String ppName : postProcessorNames) {
+				// 判断：这个处理器是否实现了 PriorityOrdered 接口？
 				if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+					// 实例化：重要动作！ 调用 getBean 强制让 Spring 实例化这个处理器。虽然此时业务 Bean 还没创建，但这些“特权 Bean”必须先出生。
 					currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
+					// 标记：记录该 Bean 已处理，防止后面重复执行。
 					processedBeans.add(ppName);
 				}
 			}
+			// 排序与执行：对当前这一批进行排序，然后依次调用它们的 postProcessBeanDefinitionRegistry 回调。
 			sortPostProcessors(currentRegistryProcessors, beanFactory);
 			registryProcessors.addAll(currentRegistryProcessors);
 			invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry, beanFactory.getApplicationStartup());

@@ -56,6 +56,11 @@ import org.springframework.lang.Nullable;
  * @see HierarchicalBeanFactory
  * @see BeanFactoryUtils
  */
+// ListableBeanFactory 是 Spring 框架中一个极其重要的接口，它是 BeanFactory 的扩展。如果说 BeanFactory 提供了“根据名字找对象”的基本能力，那么 ListableBeanFactory 则赋予了容器**“列举和预扫描”**的能力。
+// 枚举能力：与基本的 BeanFactory 不同，该接口可以一次性获取所有 Bean 的名字、数量或特定类型的 Bean 集合，而不是只能单个查找。
+// 按条件检索：支持根据 类型（Class/ResolvableType） 或 注解（Annotation） 来查找 Bean。
+// 非层级性：该接口的方法不会考虑父子容器（Hierarchy）。它只返回当前工厂中定义的 Bean。如果需要查父容器，需要使用辅助类 BeanFactoryUtils。
+// 批处理基础：它是 Spring 实现“自动装配（Autowiring）”的基础。当你在代码中使用 @Autowired List<MyService> services 时，底层就是靠这个接口找到所有匹配的 Bean。
 public interface ListableBeanFactory extends BeanFactory {
 
 	/**
@@ -67,6 +72,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @return if this bean factory contains a bean definition with the given name
 	 * @see #containsBean
 	 */
+	// 作用：检查容器是否包含指定名称的 Bean 定义。
 	boolean containsBeanDefinition(String beanName);
 
 	/**
@@ -76,6 +82,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * other means than bean definitions.
 	 * @return the number of beans defined in the factory
 	 */
+	// 作用：返回容器中注册的 Bean 定义的总数。
 	int getBeanDefinitionCount();
 
 	/**
@@ -86,6 +93,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @return the names of all beans defined in this factory,
 	 * or an empty array if none defined
 	 */
+	// 作用：以数组形式返回容器中所有 Bean 定义的名称。
 	String[] getBeanDefinitionNames();
 
 	/**
@@ -102,6 +110,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @see #getBeansOfType(Class, boolean, boolean)
 	 * @see #getBeanNamesForType(Class, boolean, boolean)
 	 */
+	// 作用：返回一个 ObjectProvider。它允许开发者以流（Stream）或延迟加载的方式处理 Bean，而不需要立即从 Map 中取出。
 	<T> ObjectProvider<T> getBeanProvider(Class<T> requiredType, boolean allowEagerInit);
 
 	/**
@@ -152,6 +161,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @see FactoryBean#getObjectType
 	 * @see BeanFactoryUtils#beanNamesForTypeIncludingAncestors(ListableBeanFactory, ResolvableType)
 	 */
+	// 作用：根据 ResolvableType（支持泛型）查找匹配的 Bean 名称。
 	String[] getBeanNamesForType(ResolvableType type);
 
 	/**
@@ -186,6 +196,9 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @see FactoryBean#getObjectType
 	 * @see BeanFactoryUtils#beanNamesForTypeIncludingAncestors(ListableBeanFactory, ResolvableType, boolean, boolean)
 	 */
+	// includeNonSingletons：是否包含原型（Prototype）或自定义作用域的 Bean。
+	// allowEagerInit：是否允许为了检查类型而初始化 FactoryBean。
+	// 作用：更精细的查找。
 	String[] getBeanNamesForType(ResolvableType type, boolean includeNonSingletons, boolean allowEagerInit);
 
 	/**
@@ -213,6 +226,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @see FactoryBean#getObjectType
 	 * @see BeanFactoryUtils#beanNamesForTypeIncludingAncestors(ListableBeanFactory, Class)
 	 */
+	// 作用：根据 Class 类型查找匹配的 Bean 名称。
 	String[] getBeanNamesForType(@Nullable Class<?> type);
 
 	/**
@@ -246,6 +260,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @see FactoryBean#getObjectType
 	 * @see BeanFactoryUtils#beanNamesForTypeIncludingAncestors(ListableBeanFactory, Class, boolean, boolean)
 	 */
+	// 作用：基于 Class 类型的精细化查找。
 	String[] getBeanNamesForType(@Nullable Class<?> type, boolean includeNonSingletons, boolean allowEagerInit);
 
 	/**
@@ -276,6 +291,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @see FactoryBean#getObjectType
 	 * @see BeanFactoryUtils#beansOfTypeIncludingAncestors(ListableBeanFactory, Class)
 	 */
+	// 作用：返回所有匹配类型的 Bean 实例，以 Map<名称, 实例> 形式返回。
 	<T> Map<String, T> getBeansOfType(@Nullable Class<T> type) throws BeansException;
 
 	/**
@@ -311,6 +327,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @see FactoryBean#getObjectType
 	 * @see BeanFactoryUtils#beansOfTypeIncludingAncestors(ListableBeanFactory, Class, boolean, boolean)
 	 */
+	// 作用：带条件的批量实例获取。
 	<T> Map<String, T> getBeansOfType(@Nullable Class<T> type, boolean includeNonSingletons, boolean allowEagerInit)
 			throws BeansException;
 
@@ -326,6 +343,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @see #getBeansWithAnnotation(Class)
 	 * @see #findAnnotationOnBean(String, Class)
 	 */
+	// 作用：查找所有带有指定注解的 Bean 的名称。
 	String[] getBeanNamesForAnnotation(Class<? extends Annotation> annotationType);
 
 	/**
@@ -343,6 +361,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @see #findAnnotationOnBean(String, Class, boolean)
 	 * @see #findAllAnnotationsOnBean(String, Class, boolean)
 	 */
+	// 作用：获取所有带有指定注解的 Bean 实例 Map。
 	Map<String, Object> getBeansWithAnnotation(Class<? extends Annotation> annotationType) throws BeansException;
 
 	/**
@@ -361,6 +380,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @see #getBeansWithAnnotation(Class)
 	 * @see #getType(String)
 	 */
+	// 作用：在指定的 Bean 上查找注解，支持搜索接口和父类。
 	@Nullable
 	<A extends Annotation> A findAnnotationOnBean(String beanName, Class<A> annotationType)
 			throws NoSuchBeanDefinitionException;
@@ -383,6 +403,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @see #getBeansWithAnnotation(Class)
 	 * @see #getType(String, boolean)
 	 */
+	// 作用：查找注解，并控制是否允许为了查注解而初始化 FactoryBean。
 	@Nullable
 	<A extends Annotation> A findAnnotationOnBean(
 			String beanName, Class<A> annotationType, boolean allowFactoryBeanInit)
@@ -404,6 +425,7 @@ public interface ListableBeanFactory extends BeanFactory {
 	 * @see #findAnnotationOnBean(String, Class, boolean)
 	 * @see #getType(String, boolean)
 	 */
+	// 作用：(Spring 6.0+) 查找指定 Bean 上所有匹配类型的注解（处理重复注解）。
 	<A extends Annotation> Set<A> findAllAnnotationsOnBean(
 			String beanName, Class<A> annotationType, boolean allowFactoryBeanInit)
 			throws NoSuchBeanDefinitionException;

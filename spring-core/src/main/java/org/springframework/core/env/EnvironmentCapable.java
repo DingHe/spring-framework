@@ -38,11 +38,16 @@ package org.springframework.core.env;
  * @see ConfigurableEnvironment
  * @see org.springframework.context.ConfigurableApplicationContext#getEnvironment()
  */
+// EnvironmentCapable 的字面意思是 “具备环境能力”。它的核心作用是：
+// 暴露环境引用：它定义了一个统一的模式，通过该接口可以获取到当前组件所关联的 Environment 对象（包含配置属性 Profiles 和属性源 Properties）。
+// 解耦类型检查：在 Spring 内部，很多方法只接收 BeanFactory。但 BeanFactory 本身不直接持有环境信息，而 ApplicationContext 却持有。通过 instanceof EnvironmentCapable 检查，框架可以在不强制要求 ApplicationContext 类型的前提下，安全地从容器中提取环境配置。
+// 统一访问入口：所有的 Spring ApplicationContext 都实现了这个接口，确保了无论是什么类型的上下文，都能以统一的方式访问外部配置。
 public interface EnvironmentCapable {
 
 	/**
 	 * Return the {@link Environment} associated with this component.
 	 */
+	// 方法作用：返回与当前组件（通常是 ApplicationContext 或容器组件）相关联的 Environment 实例。
 	Environment getEnvironment();
 
 }

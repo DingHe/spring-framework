@@ -39,9 +39,16 @@ import org.springframework.util.ResourceUtils;
  * @see org.springframework.context.ApplicationContext
  * @see org.springframework.context.ResourceLoaderAware
  */
+// ResourceLoader 是 Spring 核心 IO 包中的一个基础接口，它定义了 “资源加载策略”。Spring 框架通过它实现了对各种物理资源的抽象访问（如本地文件、类路径资源、URL 资源等）。
+// ResourceLoader 的核心使命是：统一资源定位与访问。
+// 资源抽象化：无论资源存放在类路径（Classpath）、文件系统还是网络（HTTP/FTP），ResourceLoader 都通过统一的接口返回一个 Resource 实例，屏蔽了底层的访问细节。
+// 策略模式的应用：不同的 ApplicationContext 实现类会采用不同的资源加载策略。例如，FileSystemXmlApplicationContext 默认从文件系统加载，而 ClassPathXmlApplicationContext 默认从类路径加载。
+// 它是 ApplicationContext 的超接口：所有的 Spring 上下文都继承了 ResourceLoader，因此容器本身就是一个资源加载器。
+// 字符串到资源的转换：在 Spring 的配置文件或注解中，我们可以直接将路径字符串（如 "classpath:config.xml"）赋值给 Resource 类型的属性，这全靠 ResourceLoader 在背后支撑。
 public interface ResourceLoader {
 
 	/** Pseudo URL prefix for loading from the class path: "classpath:". */
+	// 作用：定义类路径资源的伪 URL 前缀。
 	String CLASSPATH_URL_PREFIX = ResourceUtils.CLASSPATH_URL_PREFIX;
 
 
@@ -64,6 +71,7 @@ public interface ResourceLoader {
 	 * @see Resource#exists()
 	 * @see Resource#getInputStream()
 	 */
+	// 作用：根据指定的路径字符串，返回对应的 Resource 句柄。
 	Resource getResource(String location);
 
 	/**
@@ -76,6 +84,7 @@ public interface ResourceLoader {
 	 * @see org.springframework.util.ClassUtils#getDefaultClassLoader()
 	 * @see org.springframework.util.ClassUtils#forName(String, ClassLoader)
 	 */
+	// 作用：暴露该加载器内部使用的 ClassLoader（类加载器）。
 	@Nullable
 	ClassLoader getClassLoader();
 
