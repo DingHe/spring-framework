@@ -57,6 +57,11 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.web.context.request.RequestScope
  * @see org.springframework.web.context.request.SessionScope
  */
+// Scope 接口是 Spring 框架中一个极其重要的策略接口。它允许开发者扩展 Spring Bean 工厂的默认行为，定义除了标准的 singleton（单例）和 prototype（原型）之外的自定义 Bean 作用域。
+// 在 Spring 中，作用域决定了 Bean 实例的生命周期上下文以及可见范围。
+// 扩展能力：通过实现此接口，你可以将 Bean 存储在任何地方，例如 HttpSession、集群缓存、甚至是线程局部变量（ThreadLocal）中。
+// 环境适配：Spring 已经在 Web 环境中通过此接口实现了 request、session 和 application 作用域。
+// 统一抽象：它为 BeanFactory 提供了一个统一的 API。当 Bean 的定义不是单例或原型时，工厂会委派给相应的 Scope 实现来负责实例的获取和存放。
 public interface Scope {
 
 	/**
@@ -71,6 +76,10 @@ public interface Scope {
 	 * @return the desired object (never {@code null})
 	 * @throws IllegalStateException if the underlying scope is not currently active
 	 */
+	// 作用：从当前作用域获取对象。这是 Scope 接口中最核心、唯一必须实现的操作。
+	// 检查底层存储机制（如 Session）中是否已存在名为 name 的对象。
+	// 如果存在，直接返回。
+	// 如果不存在，调用 objectFactory.getObject() 创建新实例，并将其存入底层存储，然后返回。
 	Object get(String name, ObjectFactory<?> objectFactory);
 
 	/**
@@ -89,6 +98,8 @@ public interface Scope {
 	 * @throws IllegalStateException if the underlying scope is not currently active
 	 * @see #registerDestructionCallback
 	 */
+	// 作用：从底层存储中移除指定名称的对象。
+	// 返回值：返回被移除的对象；如果没找到，则返回 null。
 	@Nullable
 	Object remove(String name);
 
@@ -121,6 +132,7 @@ public interface Scope {
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getDestroyMethodName()
 	 * @see DestructionAwareBeanPostProcessor
 	 */
+	// 作用：注册一个销毁回调函数。当该作用域失效（如 Session 超期或销毁）时，应执行此 callback。
 	void registerDestructionCallback(String name, Runnable callback);
 
 	/**
@@ -130,6 +142,9 @@ public interface Scope {
 	 * @return the corresponding object, or {@code null} if none found
 	 * @throws IllegalStateException if the underlying scope is not currently active
 	 */
+	// 作用：解析当前作用域相关的上下文对象。
+	// 典型场景：在 Web 作用域中，如果 key 是 "request"，则返回 HttpServletRequest 对象；如果 key 是 "session"，则返回 HttpSession 对象。
+	// 意义：这使得开发者可以在表达式（如 SpEL）中直接引用当前环境的对象。
 	@Nullable
 	Object resolveContextualObject(String key);
 
@@ -148,6 +163,7 @@ public interface Scope {
 	 * conversation ID for the current scope
 	 * @throws IllegalStateException if the underlying scope is not currently active
 	 */
+	// 作用：返回当前作用域的会话标识符（Conversation ID）。
 	@Nullable
 	String getConversationId();
 

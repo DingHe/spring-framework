@@ -30,6 +30,11 @@ package org.springframework.beans;
  * @see PropertyEditorRegistry
  * @see java.beans.PropertyEditor
  */
+// PropertyEditorRegistrar 是 Spring 框架中用于批量注册自定义属性编辑器（PropertyEditor）的策略接口。它解决了 PropertyEditor 非线程安全带来的复用难题。
+// 在 Spring 中，PropertyEditor 是有状态的（Stateful），因此它不是线程安全的。这意味着我们不能定义一个单例的 PropertyEditor 并将其注入到多个地方。
+// 集中定义，多次注册：你可以编写一个实现类，在其中定义一套标准的编辑器注册逻辑（例如统一的日期格式、货币格式），然后在不同的场景（如多个 Controller 或多个 BeanFactory）中重复调用。
+// 解决线程安全问题：每当 Spring 需要进行数据绑定（如处理一个 Web 请求）时，它会调用 Registrar 的方法。实现类会在方法内部为当前请求 new 出全新的编辑器实例，从而避免了并发竞争。
+// 解耦：将具体的“如何注册编辑器”的逻辑从业务代码（如 Controller 的 @InitBinder）或复杂的容器配置中剥离出来。
 public interface PropertyEditorRegistrar {
 
 	/**
@@ -43,6 +48,8 @@ public interface PropertyEditorRegistrar {
 	 * @param registry the {@code PropertyEditorRegistry} to register the
 	 * custom {@code PropertyEditors} with
 	 */
+	// 将一组自定义的 PropertyEditor 注册到给定的 PropertyEditorRegistry（注册表）中。
+	// registry：这是注册表接口。在实际运行中，传入的通常是 BeanWrapperImpl（用于填充 Bean 属性）或 DataBinder（用于 Web 参数绑定）。
 	void registerCustomEditors(PropertyEditorRegistry registry);
 
 }

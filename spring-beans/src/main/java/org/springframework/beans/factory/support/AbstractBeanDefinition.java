@@ -55,6 +55,10 @@ import org.springframework.util.StringUtils;
  * @see RootBeanDefinition
  * @see ChildBeanDefinition
  */
+// 如果把 Bean 比作一个“产品”，那么 BeanDefinition 就是“生产图纸”。AbstractBeanDefinition 的核心作用是：
+// 统一属性存储：它汇聚了所有 Bean 定义通用的配置属性（如类名、作用域、构造函数参数、属性值等）。
+// 作为子类的模板：它是 RootBeanDefinition、ChildBeanDefinition 和 GenericBeanDefinition 的父类。通过提取公共逻辑，确保了不同类型的 Bean 定义在行为上的一致性。
+// 提供默认行为：它定义了默认的作用域（Singleton）、自动装配模式（NO）、初始化和销毁方法的处理逻辑等。
 @SuppressWarnings("serial")
 public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccessor
 		implements BeanDefinition, Cloneable {
@@ -137,69 +141,69 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 */
 	public static final String INFER_METHOD = "(inferred)";
 
-
+	// 存储 Bean 的 Class 对象或类名字符串（volatile 确保线程可见性）。
 	@Nullable
 	private volatile Object beanClass;
-
+	// 作用域（默认 ""，即单例）。
 	@Nullable
 	private String scope = SCOPE_DEFAULT;
-
+	// 是否为抽象类（如果是 true，容器不会实例化它，仅作为模板）。
 	private boolean abstractFlag = false;
-
+	// 是否延迟加载。
 	@Nullable
 	private Boolean lazyInit;
-
+	// 自动装配模式（按名称、按类型、构造函数或不自动装配）。
 	private int autowireMode = AUTOWIRE_NO;
-
+	// 依赖检查模式（已过期，现代 Spring 推荐注解）。
 	private int dependencyCheck = DEPENDENCY_CHECK_NONE;
-
+	// 显式指定的依赖 Bean 名称数组，确保这些 Bean 先初始化。
 	@Nullable
 	private String[] dependsOn;
-
+	// 是否允许作为其他 Bean 自动装配的候选者。
 	private boolean autowireCandidate = true;
-
+	// 当存在多个候选者时，是否作为首选。
 	private boolean primary = false;
-
+	// 存储限定符映射（@Qualifier）。
 	private final Map<String, AutowireCandidateQualifier> qualifiers = new LinkedHashMap<>();
-
+	// 作用：Spring 5.0 引入的自定义实例化回调。如果设置了此属性，Spring 将调用该 Supplier 来创建 Bean 实例，而忽略传统的反射构造函数或工厂方法。
 	@Nullable
 	private Supplier<?> instanceSupplier;
-
+	// 作用：是否允许访问非公共（non-public）的构造函数和方法。默认为 true。如果设为 false，Spring 将只能调用 public 成员。
 	private boolean nonPublicAccessAllowed = true;
-
+	// 作用：构造函数解析模式。默认为 true（宽松模式），Spring 会尝试匹配参数类型最接近的构造函数；若为 false（严格模式），如果存在歧义（多个匹配），则抛出异常。
 	private boolean lenientConstructorResolution = true;
-
+	// 作用：如果该 Bean 是通过另一个 Bean 的工厂方法创建的，这里存储该工厂 Bean 的名称。
 	@Nullable
 	private String factoryBeanName;
-
+	// 作用：工厂方法的名称。配合 factoryBeanName 使用（实例工厂方法），或者配合 beanClass 使用（静态工厂方法）。
 	@Nullable
 	private String factoryMethodName;
-
+	// 作用：存储构造函数参数的值。支持按索引（index）或按类型（type）匹配。
 	@Nullable
 	private ConstructorArgumentValues constructorArgumentValues;
-
+	// 作用：存储通过 Setter 方法注入的属性键值对。
 	@Nullable
 	private MutablePropertyValues propertyValues;
-
+	// 作用：存储需要被 IoC 容器覆盖的方法。主要用于处理 lookup-method 和 replaced-method 配置，通常通过 CGLIB 动态代理实现。
 	private MethodOverrides methodOverrides = new MethodOverrides();
-
+	// 作用：Bean 初始化后需要调用的方法名数组。Spring 6.0 后支持配置多个初始化方法。
 	@Nullable
 	private String[] initMethodNames;
-
+	// 作用：Bean 销毁前需要调用的方法名数组。支持 Spring 自动推断（如 close 或 shutdown）。
 	@Nullable
 	private String[] destroyMethodNames;
-
+	// 作用：是否强制要求初始化方法必须存在。如果为 true 且找不到对应方法，启动时会报错；默认为 true。
 	private boolean enforceInitMethod = true;
-
+	// 作用：是否强制要求销毁方法必须存在。
 	private boolean enforceDestroyMethod = true;
-
+	// 作用：标记该 Bean 是否为“合成”产生的。如果为 true，意味着它是由框架内部逻辑生成的（如 AOP 辅助类），而不是由用户在配置文件中定义的。
 	private boolean synthetic = false;
-
+	// 作用：定义 Bean 的角色。
 	private int role = BeanDefinition.ROLE_APPLICATION;
-
+	// 作用：对该 Bean 的人类可读描述。
 	@Nullable
 	private String description;
-
+	// 作用：记录该 Bean 定义是从哪个资源加载的（如 FileSystemResource 指向具体的 XML 路径）。用于问题诊断和报错定位。
 	@Nullable
 	private Resource resource;
 

@@ -41,15 +41,23 @@ import org.springframework.util.StringValueResolver;
  * @author Qimiao Chen
  * @since 2.5.2
  */
+// SimpleAliasRegistry 是 Spring 框架中别名管理的核心实现类。它不仅实现了 AliasRegistry 接口，还被 DefaultListableBeanFactory 等核心容器类继承，负责维护 Bean 及其别名之间的映射关系。
+// 该类的核心任务是管理“别名 -> 规范名称”的映射。它解决了以下关键问题：
+// 别名链处理：支持 A -> B -> C 这种传递性别名。
+// 循环检查：防止出现 A -> B 且 B -> A 导致的死循环。
+// 占位符解析：支持对别名或名称中的占位符（如 ${my.alias}）进行动态处理。
+// 线程安全：通过 ConcurrentHashMap 和 synchronized 块确保在并发注册时的安全性。
 public class SimpleAliasRegistry implements AliasRegistry {
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	/** Map from alias to canonical name. */
+	// 底层的存储容器。
+	// 结构：Key 是别名（alias），Value 是目标名称（name）。
 	private final Map<String, String> aliasMap = new ConcurrentHashMap<>(16);
 
-
+	// 作用：注册一个新的别名。
 	@Override
 	public void registerAlias(String name, String alias) {
 		Assert.hasText(name, "'name' must not be empty");

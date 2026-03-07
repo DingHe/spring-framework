@@ -64,7 +64,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	@Nullable
 	private BeanDefinitionHolder decoratedDefinition;
-
+	// 简单来说，它的作用是：定义了程序中可以被注解（Annotation）标记的元素，并提供了查询和读取这些注解的方法。
 	@Nullable
 	private AnnotatedElement qualifiedElement;
 

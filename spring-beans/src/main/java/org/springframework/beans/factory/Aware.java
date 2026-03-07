@@ -32,6 +32,11 @@ package org.springframework.beans.factory;
  * @author Juergen Hoeller
  * @since 3.1
  */
+// 在 Spring 框架中，Aware 接口的设计极度简洁，但它在整个 IoC 容器的生命周期中扮演着至关重要的“感知器”角色。
+// Aware 接口本身是一个标记接口（Marker Interface），内部没有任何方法定义。它的主要作用如下：
+// 身份标识：它告诉 Spring 容器，实现此接口的 Bean 希望被注入容器内部的某些特定资源（如 BeanFactory、ApplicationContext 等）。
+// 回调约定：虽然 Aware 接口为空，但它约定了所有的子接口（如 BeanNameAware、BeanFactoryAware）都应该遵循一种特定的回调风格：单参数、无返回值（void）的方法。
+// 解耦容器与业务：通过实现特定的 Aware 接口，Bean 可以以一种非侵入性的方式获取容器资源，而不需要通过反射或复杂的配置。
 public interface Aware {
 
 }

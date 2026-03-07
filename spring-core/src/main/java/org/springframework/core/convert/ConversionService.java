@@ -26,6 +26,12 @@ import org.springframework.lang.Nullable;
  * @author Phillip Webb
  * @since 3.0
  */
+// ConversionService 是 Spring 核心类型转换系统的入口接口。在 Spring 3.0 之后，它被引入用以替代传统的 JavaBeans PropertyEditor 机制，成为了 Spring 体系内处理类型转换的标准方案。
+// 其核心作用是在运行时将一个类型的对象（Source）转换为另一个类型的对象（Target）。
+// 统一抽象：它将繁杂的转换逻辑（如字符串转数字、日期转换、集合转换等）封装在一个统一的服务接口下。
+// 线程安全：该接口的所有实现类都必须是线程安全的，可以在整个应用程序中共享同一个实例。
+// 解耦：开发者只需要调用 convert 方法，而不需要关心底层具体是由哪个转换器（Converter）完成的。
+// 泛用性：它不仅用于 Spring 容器在设置 Bean 属性时的自动转换，也可以在业务代码中手动调用，处理如 Web 请求参数转换等逻辑。
 public interface ConversionService {
 
 	/**
@@ -42,6 +48,8 @@ public interface ConversionService {
 	 * @return {@code true} if a conversion can be performed, {@code false} if not
 	 * @throws IllegalArgumentException if {@code targetType} is {@code null}
 	 */
+	// 作用：判断是否支持从源类型到目标类型的转换。
+	// 如果返回 true，则意味着调用 convert(Object, Class) 不会因为找不到转换器而报错。
 	boolean canConvert(@Nullable Class<?> sourceType, Class<?> targetType);
 
 	/**
@@ -62,6 +70,8 @@ public interface ConversionService {
 	 * {@code false} if not
 	 * @throws IllegalArgumentException if {@code targetType} is {@code null}
 	 */
+	// 作用：基于 TypeDescriptor 判断是否支持转换。
+	// TypeDescriptor 比 Class 提供更多的上下文信息。
 	boolean canConvert(@Nullable TypeDescriptor sourceType, TypeDescriptor targetType);
 
 	/**
@@ -72,6 +82,7 @@ public interface ConversionService {
 	 * @throws ConversionException if a conversion exception occurred
 	 * @throws IllegalArgumentException if targetType is {@code null}
 	 */
+	// 作用：执行实际的类型转换。
 	@Nullable
 	<T> T convert(@Nullable Object source, Class<T> targetType);
 
@@ -88,6 +99,7 @@ public interface ConversionService {
 	 * @throws IllegalArgumentException if targetType is {@code null},
 	 * or {@code sourceType} is {@code null} but source is not {@code null}
 	 */
+	// 作用：执行更复杂的类型转换（支持上下文）。
 	@Nullable
 	Object convert(@Nullable Object source, @Nullable TypeDescriptor sourceType, TypeDescriptor targetType);
 

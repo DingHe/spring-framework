@@ -34,6 +34,10 @@ import org.springframework.lang.Nullable;
  * @see BeanWrapper
  * @see org.springframework.validation.DataBinder
  */
+// 该接口定义了一个注册表的标准，用于存储“类型/路径”与“编辑器”之间的映射关系。
+// 集中管理：它提供了一个统一的场所来存放自定义的 PropertyEditor。
+// 按需查找：当 Spring 在进行 Bean 属性填充或数据绑定（Data Binding）时，会查询这个注册表，看是否有匹配的编辑器来处理特定的字符串转对象逻辑。
+// 核心支持：它是 BeanWrapper（Bean 操作核心）和 DataBinder（Web 数据绑定核心）的父接口。
 public interface PropertyEditorRegistry {
 
 	/**
@@ -41,6 +45,9 @@ public interface PropertyEditorRegistry {
 	 * @param requiredType the type of the property
 	 * @param propertyEditor the editor to register
 	 */
+	// 作用：为所有属于指定类型的属性注册一个全局自定义编辑器。
+	// requiredType：目标类型。例如，如果你传入 java.util.Date.class，那么容器中所有类型为 Date 的属性都会使用这个编辑器。
+	// propertyEditor：具体的编辑器实例。
 	void registerCustomEditor(Class<?> requiredType, PropertyEditor propertyEditor);
 
 	/**
@@ -66,6 +73,9 @@ public interface PropertyEditorRegistry {
 	 * {@code null} if registering an editor for all properties of the given type
 	 * @param propertyEditor editor to register
 	 */
+	// 作用：为特定路径或特定类型的属性注册编辑器，提供更细粒度的控制。
+	// requiredType：可选的目标类型。
+	// propertyPath：属性路径（支持嵌套）。例如 "address.zipCode" 或 "items[0].price"。如果为 null，效果等同于第一个方法。
 	void registerCustomEditor(@Nullable Class<?> requiredType, @Nullable String propertyPath, PropertyEditor propertyEditor);
 
 	/**
@@ -76,6 +86,16 @@ public interface PropertyEditorRegistry {
 	 * {@code null} if looking for an editor for all properties of the given type
 	 * @return the registered editor, or {@code null} if none
 	 */
+	// PropertyEditor 的主要作用是实现 字符串（String）与 Java 对象（Object）之间的双向转换。
+	// 在 Spring 中，它主要负责以下任务：
+	// 配置文件解析：当你 XML 中写 <property name="age" value="25"/> 时，Spring 需要把字符串 "25" 转换成 int 类型。
+	// Web 参数绑定：当 URL 参数 ?date=2023-10-01 传给 Controller 时，Spring 需要把它转换成 java.util.Date 对象。
+	// UI 显示：将复杂的 Java 对象格式化为字符串显示在 HTML 表单的输入框中。
+	// 1) setAsText(String text) —— 反序列化 / 解析
+	// 逻辑：接收一个字符串，解析它，然后调用 setValue(Object) 将转换后的结果存入内部属性。
+	// 2) getAsText() —— 序列化 / 格式化
+	// 逻辑：获取当前持有的对象值（通过 getValue()），并将其格式化为字符串返回。
+	// 作用：根据类型和路径查找已注册的自定义编辑器。
 	@Nullable
 	PropertyEditor findCustomEditor(@Nullable Class<?> requiredType, @Nullable String propertyPath);
 

@@ -55,6 +55,11 @@ import org.springframework.lang.Nullable;
  * @see ConfigurableBeanFactory#addBeanPostProcessor
  * @see BeanFactoryPostProcessor
  */
+// BeanPostProcessor 是 Spring 框架中最强大、最常用的扩展点之一。它被称为“Bean 后置处理器”，是 Spring 容器级联生命周期中的关键钩子（Hook）。
+// 简单来说，BeanPostProcessor 允许你在 Bean 初始化阶段的前后，插入自定义的逻辑。
+// 干预生命周期：它提供了一种机制，让你能在 Bean 实例化并完成属性填充（Dependency Injection）之后，但在它正式投入使用之前，对其进行修改。
+// 包装与代理：它是 Spring AOP 的核心基础。Spring 通过后置处理器来检查 Bean 是否需要被增强，如果是，则返回一个 代理对象（Proxy） 代替原始对象。
+// 标记接口处理：可以用来检查 Bean 是否实现了某些特定接口（如 Aware 接口的某些子类），并为其注入特定的资源。
 public interface BeanPostProcessor {
 
 	/**
@@ -70,6 +75,9 @@ public interface BeanPostProcessor {
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
 	 */
+	// 执行时机：在 Bean 实例化、属性填充（populate）完成之后，但在任何初始化回调方法（如 InitializingBean 的 afterPropertiesSet 或自定义的 init-method）执行之前。
+	// bean: 当前正在处理的 Bean 实例。
+	// beanName: 该 Bean 在容器中的名称。
 	@Nullable
 	default Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
 		return bean;
@@ -96,6 +104,7 @@ public interface BeanPostProcessor {
 	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
 	 * @see org.springframework.beans.factory.FactoryBean
 	 */
+	// 执行时机：在所有的初始化回调方法（如 afterPropertiesSet 或 init-method）执行之后触发。
 	@Nullable
 	default Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
 		return bean;

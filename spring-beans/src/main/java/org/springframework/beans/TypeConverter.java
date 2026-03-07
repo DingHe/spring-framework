@@ -35,6 +35,10 @@ import org.springframework.lang.Nullable;
  * @see SimpleTypeConverter
  * @see BeanWrapperImpl
  */
+// 简单来说，TypeConverter 的作用是将一个对象从原始类型转换为目标类型。
+// 统一外观：Spring 内部存在两套转换体系（早期的 PropertyEditor 和 3.0 后的 ConversionService）。TypeConverter 接口将这两者封装在一起，调用者无需关心底层是用哪种方式实现转换的。
+// 非线程安全：由于该接口的实现通常基于 PropertyEditor（它是非线程安全的），所以 TypeConverter 的实现类通常也不是线程安全的。
+// 场景广泛：在 BeanWrapperImpl（设置 Bean 属性）、DataBinder（表单绑定）和方法参数解析中，TypeConverter 承担了将字符串（String）或其他对象转换为目标 Class 的重任。
 public interface TypeConverter {
 
 	/**
@@ -51,6 +55,9 @@ public interface TypeConverter {
 	 * @see org.springframework.core.convert.ConversionService
 	 * @see org.springframework.core.convert.converter.Converter
 	 */
+	// 作用：最基础的转换方法，仅根据目标 Class 进行转换。
+	// value：要转换的原始值（如从配置文件读取的字符串）。
+	// requiredType：期望转换成的目标类型。
 	@Nullable
 	<T> T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType) throws TypeMismatchException;
 
@@ -70,6 +77,8 @@ public interface TypeConverter {
 	 * @see org.springframework.core.convert.ConversionService
 	 * @see org.springframework.core.convert.converter.Converter
 	 */
+	// 作用：针对方法参数进行转换。
+	// methodParam：目标方法参数的元数据（MethodParameter）。
 	@Nullable
 	<T> T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType,
 			@Nullable MethodParameter methodParam) throws TypeMismatchException;
@@ -90,6 +99,9 @@ public interface TypeConverter {
 	 * @see org.springframework.core.convert.ConversionService
 	 * @see org.springframework.core.convert.converter.Converter
 	 */
+	// 作用：针对**类字段（Field）**进行转换。
+	// field：反射中的 java.lang.reflect.Field 对象。
+	// 详细说明：与方法参数类似，它主要用于分析字段上的泛型信息或特定注解。常用于 BeanWrapper 给 Bean 的成员变量赋值时。
 	@Nullable
 	<T> T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType, @Nullable Field field)
 			throws TypeMismatchException;
@@ -110,6 +122,8 @@ public interface TypeConverter {
 	 * @see org.springframework.core.convert.ConversionService
 	 * @see org.springframework.core.convert.converter.Converter
 	 */
+	// 作用：基于 TypeDescriptor 提供最高精度的转换。
+	// typeDescriptor：Spring 核心包提供的类型描述符，包含了类型、泛型、注解等全方位信息。
 	@Nullable
 	default <T> T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType,
 			@Nullable TypeDescriptor typeDescriptor) throws TypeMismatchException {

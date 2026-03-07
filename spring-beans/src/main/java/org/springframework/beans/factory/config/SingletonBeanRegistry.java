@@ -32,6 +32,12 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.beans.factory.support.DefaultSingletonBeanRegistry
  * @see org.springframework.beans.factory.support.AbstractBeanFactory
  */
+// SingletonBeanRegistry 是 Spring 框架中定义单例 Bean 注册表的核心接口。如果说 BeanFactory 是生产 Bean 的工厂，那么 SingletonBeanRegistry 就是存放这些单例成品的“仓库”。
+// 该接口定义了一套通用的契约，用于共享单例 Bean 实例。它的核心价值在于：
+// 集中管理：提供了一个统一的场所来存储、查询和管理单例对象。
+// 手动注册支持：它允许用户将一个已经在外部初始化好的对象（Plain Old Java Object）直接注册到 Spring 容器中，使其受容器管理。
+// 区分定义与实例：它仅关注已经实例化的对象。相比之下，BeanDefinitionRegistry 关注的是 Bean 的“蓝图”（定义），而此处是“实物”。
+// 基础设施暴露：ConfigurableBeanFactory 继承了此接口，使得 Spring 的 Bean 工厂具备了统一的单例管理能力。
 public interface SingletonBeanRegistry {
 
 	/**
@@ -55,6 +61,8 @@ public interface SingletonBeanRegistry {
 	 * @see org.springframework.beans.factory.DisposableBean#destroy
 	 * @see org.springframework.beans.factory.support.BeanDefinitionRegistry#registerBeanDefinition
 	 */
+	// 作用：将一个现有的、已实例化的对象注册为单例。
+	// 不负责生命周期：被注册的对象被视为“已完全初始化”。注册表不会调用 InitializingBean 的 afterPropertiesSet 回调，也不会在容器关闭时调用销毁回调（如 DisposableBean）。
 	void registerSingleton(String beanName, Object singletonObject);
 
 	/**
@@ -70,6 +78,7 @@ public interface SingletonBeanRegistry {
 	 * @return the registered singleton object, or {@code null} if none found
 	 * @see ConfigurableListableBeanFactory#getBeanDefinition
 	 */
+	// 作用：根据名称获取已注册的单例对象。
 	@Nullable
 	Object getSingleton(String beanName);
 
@@ -95,6 +104,8 @@ public interface SingletonBeanRegistry {
 	 * @see org.springframework.beans.factory.ListableBeanFactory#containsBeanDefinition
 	 * @see org.springframework.beans.factory.BeanFactory#containsBean
 	 */
+	// 作用：检查注册表中是否包含指定名称的单例实例。
+	// 返回值：仅当该 Bean 已经实例化且存在于单例池中时才返回 true。
 	boolean containsSingleton(String beanName);
 
 	/**
@@ -109,6 +120,8 @@ public interface SingletonBeanRegistry {
 	 * @see org.springframework.beans.factory.support.BeanDefinitionRegistry#getBeanDefinitionNames
 	 * @see org.springframework.beans.factory.ListableBeanFactory#getBeanDefinitionNames
 	 */
+	// 作用：返回所有已注册的单例 Bean 名称。
+	// 应用场景：常用于需要遍历当前容器中所有存活单例的情况。
 	String[] getSingletonNames();
 
 	/**
@@ -123,6 +136,8 @@ public interface SingletonBeanRegistry {
 	 * @see org.springframework.beans.factory.support.BeanDefinitionRegistry#getBeanDefinitionCount
 	 * @see org.springframework.beans.factory.ListableBeanFactory#getBeanDefinitionCount
 	 */
+	// 作用：返回当前注册表中单例 Bean 的总数。
+	// 备注：它是统计“已创建实例”的数量，不包含尚未创建的 Bean 定义。
 	int getSingletonCount();
 
 	/**
@@ -130,6 +145,8 @@ public interface SingletonBeanRegistry {
 	 * @return the mutex object (never {@code null})
 	 * @since 4.2
 	 */
+	// 作用：返回该注册表的同步互斥锁对象。
+	// 设计初衷：为外部协作组件（如具体的 BeanFactory 实现）提供一个统一的锁，以确保对单例池的操作是线程安全的。
 	Object getSingletonMutex();
 
 }

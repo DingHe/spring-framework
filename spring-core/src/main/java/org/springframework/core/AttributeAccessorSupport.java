@@ -36,10 +36,16 @@ import org.springframework.util.StringUtils;
  * @author Sam Brannen
  * @since 2.0
  */
+// 主要用于为那些需要动态附加额外属性的对象提供统一的存储和访问支持。它是 AttributeAccessor 接口的默认实现。
+// 在 Spring 的设计中，很多核心对象（如 BeanDefinition 或 TestContext）除了拥有固定的成员变量外，往往还需要在运行时临时挂载一些元数据（Metadata）。
+// 元数据容器：它本质上是一个“挂件箱”，允许开发者在不修改类结构的情况下，以键值对（Key-Value）的形式向对象添加自定义属性。
+// 统一实现：它通过内部封装一个 Map，实现了 AttributeAccessor 接口定义的所有方法，避免了子类重复编写通用的属性操作逻辑。
+// 序列化支持：如果属性值（Value）本身是可序列化的，那么整个支持类及其子类也是可序列化的。
 @SuppressWarnings("serial")
 public abstract class AttributeAccessorSupport implements AttributeAccessor, Serializable {
 
 	/** Map with String keys and Object values. */
+	// 存放所有动态属性的底层容器。
 	private final Map<String, Object> attributes = new LinkedHashMap<>();
 
 

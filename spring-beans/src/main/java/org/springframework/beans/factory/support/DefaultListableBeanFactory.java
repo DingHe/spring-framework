@@ -326,12 +326,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	//---------------------------------------------------------------------
 	// Implementation of remaining BeanFactory methods
 	//---------------------------------------------------------------------
-
+	// 按**类型（Type）**获取 Bean 的核心入口
 	@Override
 	public <T> T getBean(Class<T> requiredType) throws BeansException {
+		// 调用同一个类中的重载方法，并将第二个参数（构造参数）显式设为 null
 		return getBean(requiredType, (Object[]) null);
 	}
-
+	//
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T getBean(Class<T> requiredType, @Nullable Object... args) throws BeansException {

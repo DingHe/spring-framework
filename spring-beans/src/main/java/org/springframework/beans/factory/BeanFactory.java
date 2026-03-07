@@ -117,6 +117,14 @@ import org.springframework.lang.Nullable;
  * @see DisposableBean#destroy
  * @see org.springframework.beans.factory.support.RootBeanDefinition#getDestroyMethodName
  */
+// BeanFactory 是访问 Spring Bean 容器的根接口。它的主要作用包括：
+// 对象注册与管理中心：它是应用程序组件的中央注册表。它持有一系列 Bean 的定义（BeanDefinition），每个 Bean 由一个唯一的字符串名称（Name）标识。
+// 配置集中化：它集中管理应用程序组件的配置，使得单个对象不再需要自行读取配置文件。
+// 控制反转 (IoC) 与依赖注入 (DI)：它是 Spring 实现 DI 的核心。虽然它支持“拉取”（通过 getBean 获取），但 Spring 推荐使用“推送”模式（依赖注入），即容器自动将依赖项注入到构造函数或 Setter 方法中。
+// 生命周期管理：它负责管理 Bean 的完整生命周期，从实例化、初始化（调用各种 Aware 接口、init-method）到销毁（调用 DisposableBean、destroy-method）。
+// 单例与原型模式支持：它决定是返回一个共享的实例（Singleton，在工厂范围内唯一），还是返回一个独立的全新实例（Prototype）。
+// 分层结构支持：它支持父子容器。如果当前工厂找不到某个 Bean，它会向父工厂请求。
+
 public interface BeanFactory {
 
 	/**
@@ -125,6 +133,10 @@ public interface BeanFactory {
 	 * {@code myJndiObject} is a FactoryBean, getting {@code &myJndiObject}
 	 * will return the factory, not the instance returned by the factory.
 	 */
+	// 用于取消引用 FactoryBean 实例。
+	// 在 Spring 中，有一种特殊的 Bean 叫 FactoryBean（它是一个产生其他对象的工厂）。
+	// 如果你调用 getBean("myBean")，且 myBean 是个 FactoryBean，你得到的是该工厂创建的对象。
+	// 如果你调用 getBean("&myBean")，你得到的是 FactoryBean 实例本身。
 	String FACTORY_BEAN_PREFIX = "&";
 
 
@@ -143,6 +155,8 @@ public interface BeanFactory {
 	 * @throws NoSuchBeanDefinitionException if there is no bean with the specified name
 	 * @throws BeansException if the bean could not be obtained
 	 */
+	// 作用：根据名称获取 Bean 实例。
+	// 详情：返回一个 Bean 实例（可能是单例共享的，也可能是原型独立的）。如果找不到，会询问父工厂。
 	Object getBean(String name) throws BeansException;
 
 	/**
@@ -164,6 +178,8 @@ public interface BeanFactory {
 	 * @throws BeanNotOfRequiredTypeException if the bean is not of the required type
 	 * @throws BeansException if the bean could not be created
 	 */
+	// 作用：根据名称和指定的类型获取 Bean。
+	// 详情：相比上一个方法，它提供了类型安全检查。如果找到的 Bean 不是 requiredType 类型，会抛出 BeanNotOfRequiredTypeException，避免了手动强转可能出现的错误。
 	<T> T getBean(String name, Class<T> requiredType) throws BeansException;
 
 	/**
@@ -180,6 +196,8 @@ public interface BeanFactory {
 	 * @throws BeansException if the bean could not be created
 	 * @since 2.5
 	 */
+	// 作用：根据名称获取 Bean，并显式指定构造函数/工厂方法的参数。
+	// 详情：这通常用于**原型（Prototype）**作用域的 Bean。如果该 Bean 已经是单例且已创建，再传参数会抛出异常。
 	Object getBean(String name, Object... args) throws BeansException;
 
 	/**
@@ -196,6 +214,8 @@ public interface BeanFactory {
 	 * @since 3.0
 	 * @see ListableBeanFactory
 	 */
+	// 作用：根据类型获取唯一的 Bean 实例。
+	// 详情：不需要名称，直接按类型找。如果容器中该类型不唯一（有多个实现），会抛出 NoUniqueBeanDefinitionException。
 	<T> T getBean(Class<T> requiredType) throws BeansException;
 
 	/**
@@ -216,6 +236,7 @@ public interface BeanFactory {
 	 * @throws BeansException if the bean could not be created
 	 * @since 4.1
 	 */
+	// 作用：根据类型获取 Bean，并指定构造参数。
 	<T> T getBean(Class<T> requiredType, Object... args) throws BeansException;
 
 	/**
@@ -227,6 +248,8 @@ public interface BeanFactory {
 	 * @since 5.1
 	 * @see #getBeanProvider(ResolvableType)
 	 */
+	// 作用：获取指定类型的 ObjectProvider。
+	// 详情：ObjectProvider 是 getBean 的增强变体。它支持延迟查找、可选依赖（如果不存在不报错）以及流式处理。
 	<T> ObjectProvider<T> getBeanProvider(Class<T> requiredType);
 
 	/**
@@ -250,6 +273,8 @@ public interface BeanFactory {
 	 * @see ObjectProvider#stream()
 	 * @see ObjectProvider#orderedStream()
 	 */
+	// 作用：根据 ResolvableType（支持泛型）获取 ObjectProvider。
+	// 详情：主要用于处理带有泛型信息的依赖注入，比普通的 Class 参数更精确。
 	<T> ObjectProvider<T> getBeanProvider(ResolvableType requiredType);
 
 	/**
@@ -267,6 +292,8 @@ public interface BeanFactory {
 	 * @param name the name of the bean to query
 	 * @return whether a bean with the given name is present
 	 */
+	// 作用：查询容器中是否包含指定名称的 Bean 定义或实例。
+	// 详情：如果当前工厂没有，会查询父工厂。只要存在（无论是懒加载还是已创建）就返回 true。
 	boolean containsBean(String name);
 
 	/**
@@ -284,6 +311,8 @@ public interface BeanFactory {
 	 * @see #getBean
 	 * @see #isPrototype
 	 */
+	// 作用：判断指定名称的 Bean 是否为单例。
+	// 详情：如果是单例，getBean 永远返回同一个共享实例。
 	boolean isSingleton(String name) throws NoSuchBeanDefinitionException;
 
 	/**
@@ -302,6 +331,8 @@ public interface BeanFactory {
 	 * @see #getBean
 	 * @see #isSingleton
 	 */
+	// 作用：判断指定名称的 Bean 是否为原型。
+	// 详情：如果是原型，每次 getBean 都会创建一个新实例。
 	boolean isPrototype(String name) throws NoSuchBeanDefinitionException;
 
 	/**
@@ -319,6 +350,8 @@ public interface BeanFactory {
 	 * @see #getBean
 	 * @see #getType
 	 */
+	// 作用：检查指定名称的 Bean 是否与给定的 ResolvableType 类型匹配。
+	// 详情：用于类型预测，判断 getBean(name) 返回的对象是否可以赋值给 typeToMatch。
 	boolean isTypeMatch(String name, ResolvableType typeToMatch) throws NoSuchBeanDefinitionException;
 
 	/**
@@ -336,6 +369,7 @@ public interface BeanFactory {
 	 * @see #getBean
 	 * @see #getType
 	 */
+	// 作用：检查指定名称的 Bean 是否与给定的 Class 类型匹配。
 	boolean isTypeMatch(String name, Class<?> typeToMatch) throws NoSuchBeanDefinitionException;
 
 	/**
@@ -353,6 +387,8 @@ public interface BeanFactory {
 	 * @see #getBean
 	 * @see #isTypeMatch
 	 */
+	// 作用：获取指定名称 Bean 的类型。
+	// 详情：对于 FactoryBean，它返回的是工厂创建的对象类型（getObjectType()），而不是工厂本身的类型。
 	@Nullable
 	Class<?> getType(String name) throws NoSuchBeanDefinitionException;
 
@@ -374,6 +410,7 @@ public interface BeanFactory {
 	 * @see #getBean
 	 * @see #isTypeMatch
 	 */
+	// 作用：获取指定名称 Bean 的类型，并决定是否允许初始化 FactoryBean。
 	@Nullable
 	Class<?> getType(String name, boolean allowFactoryBeanInit) throws NoSuchBeanDefinitionException;
 
@@ -388,6 +425,7 @@ public interface BeanFactory {
 	 * @return the aliases, or an empty array if none
 	 * @see #getBean
 	 */
+	// 作用：获取指定 Bean 名称的所有别名。
 	String[] getAliases(String name);
 
 }

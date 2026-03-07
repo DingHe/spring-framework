@@ -37,12 +37,17 @@ import org.springframework.util.StringUtils;
  * @see org.springframework.beans.factory.support.RootBeanDefinition
  * @see org.springframework.beans.factory.support.ChildBeanDefinition
  */
+// BeanDefinitionHolder 是 Spring 框架中一个简单但非常实用的包装类（Wrapper）。它将 Bean 的“图纸”与它的“身份信息”绑定在了一起。
+// 在 Spring 容器中，BeanDefinition 只负责描述 Bean 如何创建（类名、属性等），它本身通常不包含该 Bean 在容器中的具体名称（Bean Name）或别名（Aliases）。
+// BeanDefinitionHolder 的核心作用是：将 Bean 的定义（BeanDefinition）与它的唯一名称和别名数组封装成一个整体
+// 内部 Bean（Inner Beans）的占位符：当你在 XML 或配置中定义一个嵌套在其他 Bean 内部的 Bean 时，Spring 会用 BeanDefinitionHolder 来表示它。。
+// 传递上下文：在解析配置文件的过程中，Holder 作为一个携带完整信息的对象在各个解析器（Parser）和装饰器（Decorator）之间传递。
 public class BeanDefinitionHolder implements BeanMetadataElement {
-
+	// 被封装的核心 Bean 定义对象。包含了 Bean 的配置信息（Class, Scope, PropertyValues 等）。
 	private final BeanDefinition beanDefinition;
-
+	// Bean 的主要名称（ID）。在容器中必须是唯一的。
 	private final String beanName;
-
+	// 可选属性。存储该 Bean 的所有别名。如果没有别名，则为 null。
 	@Nullable
 	private final String[] aliases;
 

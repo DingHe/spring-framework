@@ -68,6 +68,11 @@ import org.springframework.util.StringUtils;
  * @see org.springframework.beans.factory.DisposableBean
  * @see org.springframework.beans.factory.config.ConfigurableBeanFactory
  */
+// DefaultSingletonBeanRegistry 是 Spring Bean 工厂体系中极其重要的一个类。它不仅是单例 Bean 的“仓库”，更是 Spring 解决循环依赖、管理 Bean 生命周期（销毁）以及依赖关系映射的核心所在地。
+// 单例池管理：实现 SingletonBeanRegistry 接口，负责存储、缓存和提供全局唯一的单例 Bean 实例。
+// 解决循环依赖：通过著名的“三级缓存”机制，允许在 Bean 完全初始化之前暴露其早期引用。
+// 依赖关系追踪：记录 Bean 之间的依赖（depends-on）和包含（inner beans）关系，确保销毁时按照正确的倒序执行。
+// 生命周期回调：注册并管理 DisposableBean 实例，在容器关闭时触发销毁逻辑。
 public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements SingletonBeanRegistry {
 
 	/** Maximum number of suppressed exceptions to preserve. */
@@ -75,22 +80,31 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 
 
 	/** Cache of singleton objects: bean name to bean instance. */
+	// 一级缓存
+	// 存储完全初始化好的单例 Bean。我们平常通过 getBean 获取到的最终成品就在这里。
 	private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
 
 	/** Cache of singleton factories: bean name to ObjectFactory. */
+	// 三级缓存
+	// 存储 ObjectFactory（工厂对象）。当 Bean 实例化后，会先将其包装成工厂存入此处。只有真正发生循环依赖时，才会调用工厂获取对象。
 	private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
 
 	/** Cache of early singleton objects: bean name to bean instance. */
+	// 二级缓存
+	// 存储提前暴露的单例对象（尚未填充属性）。用于检测到循环依赖时，从三级缓存提升到此处，确保同名 Bean 在循环依赖中引用的是同一个实例。
 	private final Map<String, Object> earlySingletonObjects = new ConcurrentHashMap<>(16);
 
 	/** Set of registered singletons, containing the bean names in registration order. */
+	// 按注册顺序保存所有单例 Bean 的名称。
 	private final Set<String> registeredSingletons = new LinkedHashSet<>(256);
 
 	/** Names of beans that are currently in creation. */
+	// 记录当前正在创建中的 Bean。如果一个 Bean 在此集合中又被触发创建，说明发生了循环依赖。
 	private final Set<String> singletonsCurrentlyInCreation =
 			Collections.newSetFromMap(new ConcurrentHashMap<>(16));
 
 	/** Names of beans currently excluded from in creation checks. */
+	// 排除在创建检查之外的 Bean 名。
 	private final Set<String> inCreationCheckExclusions =
 			Collections.newSetFromMap(new ConcurrentHashMap<>(16));
 
@@ -99,18 +113,23 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	private Set<Exception> suppressedExceptions;
 
 	/** Flag that indicates whether we're currently within destroySingletons. */
+	// 标识当前是否正在执行销毁流程，销毁期间禁止创建新 Bean。
 	private boolean singletonsCurrentlyInDestruction = false;
 
 	/** Disposable bean instances: bean name to disposable instance. */
+	// 存储实现了销毁接口或有销毁方法的 Bean 实例。
 	private final Map<String, DisposableBean> disposableBeans = new LinkedHashMap<>();
 
 	/** Map between containing bean names: bean name to Set of bean names that the bean contains. */
+	// 记录“包含关系”（如：内部 Bean 属于哪个外部 Bean）。
 	private final Map<String, Set<String>> containedBeanMap = new ConcurrentHashMap<>(16);
 
 	/** Map between dependent bean names: bean name to Set of dependent bean names. */
+	// 被依赖映射。Key 是 Bean A，Value 是依赖 A 的 Bean 集合。销毁 A 前必须先销毁 Value 里的 Bean。
 	private final Map<String, Set<String>> dependentBeanMap = new ConcurrentHashMap<>(64);
 
 	/** Map between depending bean names: bean name to Set of bean names for the bean's dependencies. */
+	// 依赖映射。Key 是 Bean A，Value 是 A 所依赖的 Bean 集合。
 	private final Map<String, Set<String>> dependenciesForBeanMap = new ConcurrentHashMap<>(64);
 
 

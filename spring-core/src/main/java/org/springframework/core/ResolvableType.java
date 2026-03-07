@@ -80,6 +80,13 @@ import org.springframework.util.StringUtils;
  * @see #forInstance(Object)
  * @see ResolvableTypeProvider
  */
+// ResolvableType 是 Spring 框架（4.0版本引入）中一个极其重要的底层工具类。它位于 org.springframework.core 包下，主要用于简化 Java 泛型反射的操作。
+// 在 Java 原生反射中，处理泛型（如 List<String>、Map<Integer, List<String>>）非常繁琐，涉及到 ParameterizedType、WildcardType、TypeVariable 等多个复杂的接口。
+// ResolvableType 的核心作用是：封装并统一 Java 的 Type 操作，提供流畅的、链式调用的 API 来解析和导航泛型信息。
+// 泛型解析：可以轻松获取类、字段、方法参数或返回值的泛型参数。
+// 类型导航：支持获取父类（getSuperType）、接口（getInterfaces）并保留泛型上下文。
+// 类型匹配：提供比原生 Class.isAssignableFrom 更强大的 isAssignableFrom 方法，支持泛型层面的匹配检查。
+// 缓存机制：内部缓存解析结果，提高在高并发反射场景下的性能。
 @SuppressWarnings("serial")
 public class ResolvableType implements Serializable {
 

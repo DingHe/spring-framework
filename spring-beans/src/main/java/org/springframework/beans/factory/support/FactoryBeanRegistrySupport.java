@@ -38,9 +38,18 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  * @since 2.5.1
  */
+// FactoryBeanRegistrySupport 是 Spring Bean 工厂体系中的一个重要支撑类，它继承自 DefaultSingletonBeanRegistry。它的核心任务是专门处理 FactoryBean 产生的对象。
+// 在 Spring 中，FactoryBean 是一种特殊的 Bean，它本身是一个工厂，用于产生其他的 Bean 实例。
+// 解耦工厂与产品：它将 FactoryBean 实例本身的管理（由父类负责）与 FactoryBean 产生的产品对象（Created Objects）的管理区分开来。
+// 产品单例缓存：如果 FactoryBean 指定产生的产品是单例的（isSingleton() 返回 true），该类负责缓存这些产品对象，确保多次请求只创建一次。
+// 生命周期整合：它将 FactoryBean 产品对象的创建过程整合进 Spring 标准的生命周期中（如应用 BeanPostProcessor 进行后置处理）。
+
 public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanRegistry {
 
 	/** Cache of singleton objects created by FactoryBeans: FactoryBean name to object. */
+	// 作用：这是该类的核心缓存（常被称为“FactoryBean 产品池”）。
+	// 结构：Key 是 FactoryBean 的 Bean 名称，Value 是该工厂产生的产品对象实例。
+	// 注意：这里存储的是工厂“生产出来”的对象，而不是工厂“本身”。
 	private final Map<String, Object> factoryBeanObjectCache = new ConcurrentHashMap<>(16);
 
 
@@ -50,6 +59,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 	 * @return the FactoryBean's object type,
 	 * or {@code null} if the type cannot be determined yet
 	 */
+	// 作用：调用 FactoryBean.getObjectType() 获取其产生对象的类型。
 	@Nullable
 	protected Class<?> getTypeForFactoryBean(FactoryBean<?> factoryBean) {
 		try {
@@ -71,6 +81,8 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 	 * {@code ResolvableType.NONE}
 	 * @since 5.2
 	 */
+	// 作用：从 Bean 定义的属性中尝试提取对象类型。
+	// 背景：有时 Bean 尚未实例化，Spring 会尝试从配置元数据中直接读取类型信息。
 	ResolvableType getTypeForFactoryBeanFromAttributes(AttributeAccessor attributes) {
 		Object attribute = attributes.getAttribute(FactoryBean.OBJECT_TYPE_ATTRIBUTE);
 		if (attribute instanceof ResolvableType resolvableType) {

@@ -82,7 +82,8 @@ public class DateFormatterRegistrar implements FormatterRegistrar {
 		converterRegistry.addConverter(new LongToCalendarConverter());
 	}
 
-
+	// 这告诉 Spring 的 ConversionService：“如果你手里有一个 Date 对象，而你需要一个 Long（通常是时间戳），可以用我来处理。”
+	// source.getTime(): 该方法返回自 1970 年 1 月 1 日 00:00:00 GMT 以来的毫秒数。
 	private static class DateToLongConverter implements Converter<Date, Long> {
 
 		@Override

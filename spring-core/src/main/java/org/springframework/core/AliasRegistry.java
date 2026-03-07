@@ -23,6 +23,12 @@ package org.springframework.core;
  * @author Juergen Hoeller
  * @since 2.5.2
  */
+// AliasRegistry 是 Spring 核心包中的一个基础接口，它定义了管理**别名（Alias）**的标准行为。
+// 在 Spring 的体系结构中，它是 BeanDefinitionRegistry 的父接口，这意味着所有的 Bean 注册中心都天然具备管理别名的能力。
+// 在 Spring 容器中，一个 Bean 通常有一个唯一的“规范名称（Canonical Name）”。但在实际开发中，我们可能希望通过不同的名称来引用同一个 Bean。
+// 解耦命名：允许同一组件在不同的上下文或模块中使用不同的名称。
+// 管理映射：它维护了一套从“别名”到“规范名称”的映射关系，确保无论使用哪个别名，最终都能指向唯一的 Bean 实例。
+// 作为基石：它为更复杂的容器操作（如 Bean 的注册和获取）提供了最基础的命名解析支持。
 public interface AliasRegistry {
 
 	/**
@@ -32,6 +38,7 @@ public interface AliasRegistry {
 	 * @throws IllegalStateException if the alias is already in use
 	 * and may not be overridden
 	 */
+	// 作用：为一个规范名称（name）注册一个别名（alias）。
 	void registerAlias(String name, String alias);
 
 	/**
@@ -39,6 +46,7 @@ public interface AliasRegistry {
 	 * @param alias the alias to remove
 	 * @throws IllegalStateException if no such alias was found
 	 */
+	// 作用：从注册表中移除指定的别名。
 	void removeAlias(String alias);
 
 	/**
@@ -47,6 +55,7 @@ public interface AliasRegistry {
 	 * @param name the name to check
 	 * @return whether the given name is an alias
 	 */
+	// 作用：判断给定的名称是否是一个已注册的“别名”。
 	boolean isAlias(String name);
 
 	/**

@@ -29,6 +29,11 @@ import org.springframework.util.Assert;
  * @author Sam Brannen
  * @since 2.0
  */
+// 在软件设计中，我们经常需要给某些对象添加额外的临时信息，但又不希望修改这些对象的类定义。AttributeAccessor 就充当了一个**“元数据容器”**的作用：
+// 扩展性：允许在运行时动态地为对象添加属性，而不需要继承或修改原有类。
+// 统一契约：Spring 中的许多核心组件（如 BeanDefinition、TestContext）都实现了这个接口，从而让开发者可以用统一的 API 来操作这些组件的附加属性。
+// 解耦：通过 key-value 的形式存储数据，使得不同的第三方库或插件可以在不感知对方的情况下，共享同一个对象上的上下文信息。
+
 public interface AttributeAccessor {
 
 	/**
@@ -40,6 +45,9 @@ public interface AttributeAccessor {
 	 * @param name the unique attribute key
 	 * @param value the attribute value to be attached
 	 */
+	// 作用：将指定的 value 绑定到唯一的 name 上。
+	// 如果传入的 value 为 null，该方法的行为等同于调用 removeAttribute(name)，即删除该属性。
+	// 为了防止与其他组件定义的属性冲突，Spring 官方建议使用全限定名（如类名或包名作为前缀）作为 key。
 	void setAttribute(String name, @Nullable Object value);
 
 	/**
@@ -48,6 +56,7 @@ public interface AttributeAccessor {
 	 * @param name the unique attribute key
 	 * @return the current value of the attribute, if any
 	 */
+	// 作用：根据指定的 name 获取绑定的属性值。
 	@Nullable
 	Object getAttribute(String name);
 
@@ -69,6 +78,7 @@ public interface AttributeAccessor {
 	 * @see #getAttribute(String)
 	 * @see #setAttribute(String, Object)
 	 */
+	// 作用：这是一个**默认实现（default）**方法，用于“计算并设置”属性。它结合了“获取”和“设置”的逻辑，确保属性在不存在时被自动初始化。
 	@SuppressWarnings("unchecked")
 	default <T> T computeAttribute(String name, Function<String, T> computeFunction) {
 		Assert.notNull(name, "Name must not be null");
@@ -89,6 +99,8 @@ public interface AttributeAccessor {
 	 * @param name the unique attribute key
 	 * @return the last value of the attribute, if any
 	 */
+	// 作用：从对象中移除名为 name 的属性。
+	// 返回：被移除的属性值。如果原本就没有该属性，则返回 null。
 	@Nullable
 	Object removeAttribute(String name);
 
@@ -97,11 +109,13 @@ public interface AttributeAccessor {
 	 * <p>Otherwise return {@code false}.
 	 * @param name the unique attribute key
 	 */
+	// 作用：检查是否存在名为 name 的属性。
 	boolean hasAttribute(String name);
 
 	/**
 	 * Return the names of all attributes.
 	 */
+	// 作用：获取当前对象中所有已定义属性的名称。
 	String[] attributeNames();
 
 }

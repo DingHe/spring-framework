@@ -32,6 +32,10 @@ import org.springframework.util.Assert;
  * @param <S> the source type
  * @param <T> the target type
  */
+// 在 Spring 3.0 之后，Converter 接口被引入以提供一种强类型、线程安全的方式来处理数据转换：
+// 原子转换逻辑：它定义了从一种类型 $S$（Source）到另一种类型 $T$（Target）的单一转换路径。
+// 解耦：开发者只需实现简单的转换逻辑（如 String 转 User），Spring 的 ConversionService 会自动将其整合，实现链式调用（如 String -> Integer -> Enum）。
+// 线程安全：接口设计要求实现类必须是线程安全的，因此一个 Converter 实例可以在整个 Spring 上下文中共享。
 @FunctionalInterface
 public interface Converter<S, T> {
 
@@ -41,6 +45,7 @@ public interface Converter<S, T> {
 	 * @return the converted object, which must be an instance of {@code T} (potentially {@code null})
 	 * @throws IllegalArgumentException if the source cannot be converted to the desired target type
 	 */
+	// 作用：执行具体的转换逻辑，将类型为 $S$ 的源对象转换为类型为 $T$ 的目标对象。
 	@Nullable
 	T convert(S source);
 
@@ -56,6 +61,7 @@ public interface Converter<S, T> {
 	 * and then applies the {@code after} {@link Converter}
 	 * @since 5.3
 	 */
+	// 作用：构建一个“组合转换器”。它类似于 Java 8 Function 接口的 andThen 方法。
 	default <U> Converter<S, U> andThen(Converter<? super T, ? extends U> after) {
 		Assert.notNull(after, "'after' Converter must not be null");
 		return (S s) -> {

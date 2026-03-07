@@ -27,6 +27,8 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  * @since 2.5
  */
+// 在复杂的 Spring 应用中，一个 Bean 的属性可能来自 XML 文件、Java 配置类、甚至是某个自定义注解。当程序报错时，如果只知道属性值而不知道来源，调试会非常困难。
+// 属性包装：它重写了父类的存取逻辑，将普通的 Object 属性值包装成 BeanMetadataAttribute 对象。
 @SuppressWarnings("serial")
 public class BeanMetadataAttributeAccessor extends AttributeAccessorSupport implements BeanMetadataElement {
 
