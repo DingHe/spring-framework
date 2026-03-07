@@ -53,10 +53,17 @@ import org.springframework.util.Assert;
  * @see ClassPathBeanDefinitionScanner
  * @see org.springframework.context.support.GenericXmlApplicationContext
  */
+// AnnotationConfigApplicationContext 是 Spring Framework 中最为常用的上下文实现类之一。它标志着 Spring 从传统的 XML 配置时代全面转向了**注解驱动（Annotation-Driven）和代码配置（Java-based Configuration）**时代。
+// 注解配置容器：它专门用于处理带有 @Configuration、@Component、@Service、@Repository 等注解的 Java 类。
+// 消除 XML：它允许开发者完全不使用 applicationContext.xml，而是通过 Java 类来定义 Bean 之间的依赖关系。
+// 灵活的 Bean 注册：它支持两种主要的 Bean 引入方式：
+// 直接注册：通过 register(Class...) 手动指定配置类。
+// 路径扫描：通过 scan(String...) 自动发现指定包下的组件。
+// 组合使用：它既可以作为独立的 Spring 容器运行，也可以作为 Spring Boot 启动时的底层容器基础。
 public class AnnotationConfigApplicationContext extends GenericApplicationContext implements AnnotationConfigRegistry {
-
+	// 注解 Bean 定义读取器。负责解析注册的配置类，并将其转换为 Spring 内部的 BeanDefinition。它还负责注册核心的后置处理器（如 ConfigurationClassPostProcessor）。
 	private final AnnotatedBeanDefinitionReader reader;
-
+	// 类路径 Bean 定义扫描器。负责根据给定的包路径，扫描符合条件的类（如带有 @Component 的类）并将其注册到容器中。
 	private final ClassPathBeanDefinitionScanner scanner;
 
 
@@ -87,6 +94,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * @param componentClasses one or more component classes &mdash; for example,
 	 * {@link Configuration @Configuration} classes
 	 */
+	// 作用：最常用的构造器之一。接收一个或多个配置类（如 AppConfig.class）。
 	public AnnotationConfigApplicationContext(Class<?>... componentClasses) {
 		this();
 		register(componentClasses);
@@ -99,6 +107,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * and automatically refreshing the context.
 	 * @param basePackages the packages to scan for component classes
 	 */
+	// 作用：接收一个或多个包名。
 	public AnnotationConfigApplicationContext(String... basePackages) {
 		this();
 		scan(basePackages);
@@ -110,6 +119,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * Propagate the given custom {@code Environment} to the underlying
 	 * {@link AnnotatedBeanDefinitionReader} and {@link ClassPathBeanDefinitionScanner}.
 	 */
+	// 作用：设置容器的环境变量（Profiles, Properties）。
 	@Override
 	public void setEnvironment(ConfigurableEnvironment environment) {
 		super.setEnvironment(environment);
@@ -128,6 +138,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * @see AnnotationBeanNameGenerator
 	 * @see FullyQualifiedAnnotationBeanNameGenerator
 	 */
+	// 作用：设置自定义的 Bean 名称生成策略。
 	public void setBeanNameGenerator(BeanNameGenerator beanNameGenerator) {
 		this.reader.setBeanNameGenerator(beanNameGenerator);
 		this.scanner.setBeanNameGenerator(beanNameGenerator);
@@ -141,6 +152,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * <p>Any call to this method must occur prior to calls to {@link #register(Class...)}
 	 * and/or {@link #scan(String...)}.
 	 */
+	// 作用：设置如何处理 Bean 的作用域（如 Singleton, Prototype）。
 	public void setScopeMetadataResolver(ScopeMetadataResolver scopeMetadataResolver) {
 		this.reader.setScopeMetadataResolver(scopeMetadataResolver);
 		this.scanner.setScopeMetadataResolver(scopeMetadataResolver);
@@ -160,6 +172,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * @see #scan(String...)
 	 * @see #refresh()
 	 */
+	// 手动注册一个或多个组件类。
 	@Override
 	public void register(Class<?>... componentClasses) {
 		Assert.notEmpty(componentClasses, "At least one component class must be specified");
@@ -177,6 +190,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * @see #register(Class...)
 	 * @see #refresh()
 	 */
+	// 作用：在指定的包路径下执行扫描。
 	@Override
 	public void scan(String... basePackages) {
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
@@ -190,7 +204,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	//---------------------------------------------------------------------
 	// Adapt superclass registerBean calls to AnnotatedBeanDefinitionReader
 	//---------------------------------------------------------------------
-
+	// 作用：这是对父类方法的覆盖实现，提供更灵活的编程方式注册 Bean。
 	@Override
 	public <T> void registerBean(@Nullable String beanName, Class<T> beanClass,
 			@Nullable Supplier<T> supplier, BeanDefinitionCustomizer... customizers) {
