@@ -409,13 +409,15 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	public Object initializeBean(Object existingBean, String beanName) {
 		return initializeBean(beanName, existingBean, null);
 	}
-
+	// 它是 Bean 实例化之后、自定义初始化方法（如 init-method）执行之前的一个关键扩展点。
 	@Override
 	public Object applyBeanPostProcessorsBeforeInitialization(Object existingBean, String beanName)
 			throws BeansException {
-
+		// 作用：将传入的原始 Bean 实例（existingBean）赋值给变量 result。
 		Object result = existingBean;
+		// 2. 遍历所有已注册的 BeanPostProcessor
 		for (BeanPostProcessor processor : getBeanPostProcessors()) {
+			// 作用：调用当前处理器的 postProcessBeforeInitialization 方法。
 			Object current = processor.postProcessBeforeInitialization(result, beanName);
 			if (current == null) {
 				return result;
@@ -1752,15 +1754,24 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @see #invokeInitMethods
 	 * @see #applyBeanPostProcessorsAfterInitialization
 	 */
+	// initializeBean 方法负责对已经实例化并填充好属性的 Bean 进行最后的加工，包括执行各种回调、初始化方法和 AOP 代理。
 	protected Object initializeBean(String beanName, Object bean, @Nullable RootBeanDefinition mbd) {
+		// 检查 Bean 是否实现了一系列特殊的 Aware 接口，并注入容器级的基础设施。
+		// 详细逻辑：在该方法内部，Spring 会判断并调用以下接口的方法：
+		// BeanNameAware -> setBeanName：让 Bean 知道自己在容器里的名字。
+		// BeanClassLoaderAware -> setBeanClassLoader：让 Bean 拿到加载它的类加载器。
+		// BeanFactoryAware -> setBeanFactory：让 Bean 拿到拥有它的工厂实例。
 		invokeAwareMethods(beanName, bean);
 
 		Object wrappedBean = bean;
+		// !mbd.isSynthetic()：检查是否为“合成” Bean。合成 Bean 是由容器内部自动生成的（如某些内部辅助工具），通常不需要执行复杂的生命周期回调。
 		if (mbd == null || !mbd.isSynthetic()) {
+			// 执行所有已注册的 BeanPostProcessor 的前置方法。
 			wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
 		}
 
 		try {
+			// 作用：触发开发者自定义的初始化逻辑。
 			invokeInitMethods(beanName, wrappedBean, mbd);
 		}
 		catch (Throwable ex) {
@@ -1768,23 +1779,30 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					(mbd != null ? mbd.getResourceDescription() : null), beanName, ex.getMessage(), ex);
 		}
 		if (mbd == null || !mbd.isSynthetic()) {
+			// 作用：执行所有 BeanPostProcessor 的后置处理方法。
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}
 
 		return wrappedBean;
 	}
-
+	// 它的作用是：识别并处理那些实现了 Aware 接口的 Bean，将容器内部的核心基础设施对象注入到这些 Bean 中。
+	// “Aware”在英文中是“感知”的意思。实现这些接口的 Bean 能够“感知”到 Spring 容器的存在，并获取容器的元数据。
 	private void invokeAwareMethods(String beanName, Object bean) {
+		// 作用：首先判断当前 Bean 实例是否实现了 org.springframework.beans.factory.Aware 接口。
 		if (bean instanceof Aware) {
+			// 作用：如果 Bean 实现了 BeanNameAware 接口，则调用其 setBeanName 方法。
+			// 注入内容：传入该 Bean 在 Spring 容器中注册的唯一名称（ID）。
 			if (bean instanceof BeanNameAware beanNameAware) {
 				beanNameAware.setBeanName(beanName);
 			}
+			// 作用：如果 Bean 实现了 BeanClassLoaderAware 接口，则为其注入类加载器。
 			if (bean instanceof BeanClassLoaderAware beanClassLoaderAware) {
 				ClassLoader bcl = getBeanClassLoader();
 				if (bcl != null) {
 					beanClassLoaderAware.setBeanClassLoader(bcl);
 				}
 			}
+			// 作用：如果 Bean 实现了 BeanFactoryAware 接口，则将容器自身注入到 Bean 中。
 			if (bean instanceof BeanFactoryAware beanFactoryAware) {
 				beanFactoryAware.setBeanFactory(AbstractAutowireCapableBeanFactory.this);
 			}

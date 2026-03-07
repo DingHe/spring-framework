@@ -1474,6 +1474,7 @@ public class ResolvableType implements Serializable {
 	/**
 	 * Strategy interface used to resolve {@link TypeVariable TypeVariables}.
 	 */
+	// 在 ResolvableType 的架构中，VariableResolver 是处理 泛型变量（Type Variables，如 <T>, <E>） 的核心策略接口。
 	interface VariableResolver extends Serializable {
 
 		/**

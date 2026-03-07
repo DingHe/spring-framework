@@ -166,12 +166,15 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	private final Map<String, BeanDefinitionHolder> mergedBeanDefinitionHolders = new ConcurrentHashMap<>(256);
 
 	/** Map of singleton and non-singleton bean names, keyed by dependency type. */
+	// 存储所有作用域（单例、原型等）的 Bean 名称映射。
 	private final Map<Class<?>, String[]> allBeanNamesByType = new ConcurrentHashMap<>(64);
 
 	/** Map of singleton-only bean names, keyed by dependency type. */
+	// 仅存储单例 Bean 的名称映射。
 	private final Map<Class<?>, String[]> singletonBeanNamesByType = new ConcurrentHashMap<>(64);
 
 	/** List of bean definition names, in registration order. */
+	// 所有注册的bean定义
 	private volatile List<String> beanDefinitionNames = new ArrayList<>(256);
 
 	/** List of names of manually registered singletons, in registration order. */
@@ -332,11 +335,14 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		// 调用同一个类中的重载方法，并将第二个参数（构造参数）显式设为 null
 		return getBean(requiredType, (Object[]) null);
 	}
-	//
+	//  按**类型（Type）**获取 Bean 的核心入口
+	// Object... args：允许传入变长参数，这些参数仅在 Bean 需要被新创建（通常是 Prototype 作用域）且需要特定构造参数时才生效。
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T getBean(Class<T> requiredType, @Nullable Object... args) throws BeansException {
 		Assert.notNull(requiredType, "Required type must not be null");
+		// ResolvableType.forRawClass(requiredType)：将原始的 Class 包装成 Spring 的 ResolvableType。
+		// 这使得 Spring 能更方便地处理泛型信息（虽然这里传入的是 Raw Class，但统一转换方便后续内部处理）。
 		Object resolved = resolveBean(ResolvableType.forRawClass(requiredType), args, false);
 		if (resolved == null) {
 			throw new NoSuchBeanDefinitionException(requiredType);
@@ -505,19 +511,28 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	private String[] getBeanNamesForTypedStream(ResolvableType requiredType, boolean allowEagerInit) {
 		return BeanFactoryUtils.beanNamesForTypeIncludingAncestors(this, requiredType, true, allowEagerInit);
 	}
-
+	// 根据给定的类型（支持泛型），获取容器中所有匹配该类型的 Bean 名称列表。
 	@Override
 	public String[] getBeanNamesForType(ResolvableType type) {
 		return getBeanNamesForType(type, true, true);
 	}
-
+	// 根据类型获取 Bean 名称的核心分流逻辑。
+	// 它的作用是：判断传入的类型是否包含泛型，从而决定是走“快速通道”还是“深度解析通道”。
+	// type: 要查找的类型（封装在 ResolvableType 中，可能包含泛型，如 List<Service>）。
+	// includeNonSingletons: 是否包含非单例 Bean（如 Prototype 作用域）。
+	// allowEagerInit: 是否允许为了确定类型而预初始化 FactoryBean。
 	@Override
 	public String[] getBeanNamesForType(ResolvableType type, boolean includeNonSingletons, boolean allowEagerInit) {
+		// 作用：尝试将 ResolvableType 转换为 Java 的 Class 对象。
 		Class<?> resolved = type.resolve();
+		// 确保成功解析出了原始的 Class 类。
+		// 确保这个类型不带泛型（例如只是普通的 UserService.class）。
 		if (resolved != null && !type.hasGenerics()) {
+			// 情形一：走“快速通道” (非泛型查找)
 			return getBeanNamesForType(resolved, includeNonSingletons, allowEagerInit);
 		}
 		else {
+			// 情形二：走“深度解析通道” (泛型查找)
 			return doGetBeanNamesForType(type, includeNonSingletons, allowEagerInit);
 		}
 	}
@@ -526,53 +541,69 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	public String[] getBeanNamesForType(@Nullable Class<?> type) {
 		return getBeanNamesForType(type, true, true);
 	}
-
+	// 基于 Class 类型获取 Bean 名称的实现
 	@Override
 	public String[] getBeanNamesForType(@Nullable Class<?> type, boolean includeNonSingletons, boolean allowEagerInit) {
+		// !isConfigurationFrozen()：检查配置是否尚未冻结。如果还在注册 Bean 的过程中，Bean 定义随时可能变化，此时不能使用缓存，必须实时查询。
+		// type == null：如果没有指定类型，无法进行类级别的缓存。
+		// !allowEagerInit：如果不允许预初始化 FactoryBean，查询结果可能会因当前容器状态而异，因此也不适合走静态缓存。
 		if (!isConfigurationFrozen() || type == null || !allowEagerInit) {
 			return doGetBeanNamesForType(ResolvableType.forRawClass(type), includeNonSingletons, allowEagerInit);
 		}
+		// 作用：根据查找范围选择对应的缓存池。
 		Map<Class<?>, String[]> cache =
 				(includeNonSingletons ? this.allBeanNamesByType : this.singletonBeanNamesByType);
+		// 尝试从缓存中命中结果
 		String[] resolvedBeanNames = cache.get(type);
 		if (resolvedBeanNames != null) {
 			return resolvedBeanNames;
 		}
+		// 缓存未命中：执行深度查询
 		resolvedBeanNames = doGetBeanNamesForType(ResolvableType.forRawClass(type), includeNonSingletons, true);
 		if (ClassUtils.isCacheSafe(type, getBeanClassLoader())) {
 			cache.put(type, resolvedBeanNames);
 		}
 		return resolvedBeanNames;
 	}
-
+	// Spring 容器中执行“按类型查找”的终极实现。它的任务是遍历容器中所有的 Bean 定义和手动注册的单例，通过复杂的条件判断，筛选出符合类型的候选人。
 	private String[] doGetBeanNamesForType(ResolvableType type, boolean includeNonSingletons, boolean allowEagerInit) {
 		List<String> result = new ArrayList<>();
 
 		// Check all bean definitions.
+		// // 1. 遍历所有注册的 Bean 名称
 		for (String beanName : this.beanDefinitionNames) {
 			// Only consider bean as eligible if the bean name is not defined as alias for some other bean.
+			// 2. 只有不是别名的情况下才继续（防止重复处理同一 Bean）
 			if (!isAlias(beanName)) {
 				try {
+					// 3. 获取合并后的 Bean 定义（处理父子继承关系）
 					RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
 					// Only check bean definition if it is complete.
+					// 4. 资格检查：非抽象类，且满足初始化策略
 					if (!mbd.isAbstract() && (allowEagerInit ||
 							(mbd.hasBeanClass() || !mbd.isLazyInit() || isAllowEagerClassLoading()) &&
 									!requiresEagerInitForType(mbd.getFactoryBeanName()))) {
-						boolean isFactoryBean = isFactoryBean(beanName, mbd);
-						BeanDefinitionHolder dbd = mbd.getDecoratedDefinition();
+						// 5. 准备匹配所需的元数据
+						boolean isFactoryBean = isFactoryBean(beanName, mbd); // 是否是工厂 Bean
+						BeanDefinitionHolder dbd = mbd.getDecoratedDefinition(); // 是否有装饰器定义
 						boolean matchFound = false;
+						// 允许初始化的条件：允许预热 或 已经是单例实例
 						boolean allowFactoryBeanInit = (allowEagerInit || containsSingleton(beanName));
 						boolean isNonLazyDecorated = (dbd != null && !mbd.isLazyInit());
+						// 6. 场景 A：普通 Bean 的匹配逻辑
 						if (!isFactoryBean) {
 							if (includeNonSingletons || isSingleton(beanName, mbd, dbd)) {
 								matchFound = isTypeMatch(beanName, type, allowFactoryBeanInit);
 							}
 						}
+						// 7. 场景 B：FactoryBean 的特殊处理
 						else {
+							// 先检查 FactoryBean 产生的对象类型是否匹配
 							if (includeNonSingletons || isNonLazyDecorated ||
 									(allowFactoryBeanInit && isSingleton(beanName, mbd, dbd))) {
 								matchFound = isTypeMatch(beanName, type, allowFactoryBeanInit);
 							}
+							// 如果产生的对象不匹配，尝试匹配 FactoryBean 本身（带 & 前缀）
 							if (!matchFound) {
 								// In case of FactoryBean, try to match FactoryBean instance itself next.
 								beanName = FACTORY_BEAN_PREFIX + beanName;
@@ -581,6 +612,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 								}
 							}
 						}
+						// 8. 匹配成功则存入结果集
 						if (matchFound) {
 							result.add(beanName);
 						}
@@ -605,19 +637,25 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		// Check manually registered singletons too.
+		// 第二部分：遍历 manualSingletonNames (手动注册的 Bean)
+		// 有些 Bean 是通过 registerSingleton 手动塞进容器的，它们不在 beanDefinitionNames 里。
+		// // 10. 遍历手动注册的单例对象名
 		for (String beanName : this.manualSingletonNames) {
 			try {
 				// In case of FactoryBean, match object created by FactoryBean.
+				// 11. 如果是 FactoryBean，先匹配它产出的对象
 				if (isFactoryBean(beanName)) {
 					if ((includeNonSingletons || isSingleton(beanName)) && isTypeMatch(beanName, type)) {
-						result.add(beanName);
+						result.add(beanName); // 匹配成功直接处理下一个
 						// Match found for this bean: do not match FactoryBean itself anymore.
 						continue;
 					}
 					// In case of FactoryBean, try to match FactoryBean itself next.
+					// 12. 产出对象不匹配，尝试匹配 FactoryBean 实例本身
 					beanName = FACTORY_BEAN_PREFIX + beanName;
 				}
 				// Match raw bean instance (might be raw FactoryBean).
+				// 13. 直接进行类型匹配
 				if (isTypeMatch(beanName, type)) {
 					result.add(beanName);
 				}
@@ -1247,18 +1285,21 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 		throw new NoSuchBeanDefinitionException(requiredType);
 	}
-
+	// resolveNamedBean 是 Spring 在按类型查找 Bean 时的核心逻辑。它的任务是：在一堆符合类型的候选者中，选出那个最合适的“唯一” Bean。
 	@SuppressWarnings("unchecked")
 	@Nullable
 	private <T> NamedBeanHolder<T> resolveNamedBean(
 			ResolvableType requiredType, @Nullable Object[] args, boolean nonUniqueAsNull) throws BeansException {
 
 		Assert.notNull(requiredType, "Required type must not be null");
+		// 根据类型从容器中找出所有匹配该类型（包括子类和实现类）的 Bean 的名称。
 		String[] candidateNames = getBeanNamesForType(requiredType);
-
+		// 作用：当有多个候选者时，排除掉那些在配置中设置了 autowire-candidate="false" 的 Bean。
+		// 逻辑：Spring 只会考虑那些允许被自动注入的 Bean。
 		if (candidateNames.length > 1) {
 			List<String> autowireCandidates = new ArrayList<>(candidateNames.length);
 			for (String beanName : candidateNames) {
+				// 如果不是 Bean 定义（可能是手动注册的单例）或者是可自动装配的候选者
 				if (!containsBeanDefinition(beanName) || getBeanDefinition(beanName).isAutowireCandidate()) {
 					autowireCandidates.add(beanName);
 				}
@@ -1267,35 +1308,43 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				candidateNames = StringUtils.toStringArray(autowireCandidates);
 			}
 		}
-
+		// 作用：最简单的场景。如果过滤后只剩一个，直接调用重载方法获取该 Bean 的实例并返回。
 		if (candidateNames.length == 1) {
 			return resolveNamedBean(candidateNames[0], requiredType, args);
 		}
+		// 如果存在多个候选者，Spring 必须开启“选美模式”，逻辑如下：
 		else if (candidateNames.length > 1) {
 			Map<String, Object> candidates = CollectionUtils.newLinkedHashMap(candidateNames.length);
 			for (String beanName : candidateNames) {
+				// // 如果已经是单例且没有传参，直接拿实例
 				if (containsSingleton(beanName) && args == null) {
 					Object beanInstance = getBean(beanName);
 					candidates.put(beanName, (beanInstance instanceof NullBean ? null : beanInstance));
 				}
 				else {
+					// 否则，先只存它的类型信息（避免过早初始化非单例 Bean）
 					candidates.put(beanName, getType(beanName));
 				}
 			}
+			// 作用：检查这些候选者中是否有一个被标记为 @Primary。如果有，它就是赢家。
 			String candidateName = determinePrimaryCandidate(candidates, requiredType.toClass());
 			if (candidateName == null) {
+				// 作用：如果没有 @Primary，则检查 JSR-330 的 @Priority 注解，选出数值最小（优先级最高）的那个。
 				candidateName = determineHighestPriorityCandidate(candidates, requiredType.toClass());
 			}
+			// D. 处理胜出者
 			if (candidateName != null) {
 				Object beanInstance = candidates.get(candidateName);
 				if (beanInstance == null) {
 					return null;
 				}
+				// // 如果 Map 里存的是类型，说明还没实例化，现在去实例化它
 				if (beanInstance instanceof Class) {
 					return resolveNamedBean(candidateName, requiredType, args);
 				}
 				return new NamedBeanHolder<>(candidateName, (T) beanInstance);
 			}
+			// E. 无法确定唯一性时的报错
 			if (!nonUniqueAsNull) {
 				throw new NoUniqueBeanDefinitionException(requiredType, candidates.keySet());
 			}

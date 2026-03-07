@@ -148,12 +148,21 @@ final class SerializableTypeWrapper {
 	/**
 	 * A {@link Serializable} interface providing access to a {@link Type}.
 	 */
+	// 在 Java 中，标准的 java.lang.reflect.Type（及其子类如 ParameterizedType）通常是不可序列化的。
+	// 这在分布式环境或需要将 BeanDefinition 存储到磁盘的 Spring 应用中会产生问题。
+	// TypeProvider 的核心作用包括：
+	// 屏蔽不可序列化细节：通过实现此接口，Spring 可以将一个 Type 包装起来。在序列化时，只序列化 TypeProvider 的元数据（如字段名、方法名）；
+	// 在反序列化后，再通过 getType() 重新获取 Type 对象。
+	// 延迟加载（Lazy Loading）：只有在真正需要解析类型时，才调用 getType() 从原始源（如 Field 或 MethodParameter）中提取类型信息。
+	// 提供溯源信息：通过 getSource() 告知开发者这个类型是从哪里来的（是哪个类的哪个字段，或者是哪个方法的参数）。
 	@SuppressWarnings("serial")
 	interface TypeProvider extends Serializable {
 
 		/**
 		 * Return the (possibly non {@link Serializable}) {@link Type}.
 		 */
+		// 作用：返回该提供者所持有的底层 java.lang.reflect.Type 对象。
+		// 返回类型：可能是 Class、ParameterizedType（带泛型的类型）、GenericArrayType（泛型数组）等。
 		@Nullable
 		Type getType();
 
@@ -161,6 +170,9 @@ final class SerializableTypeWrapper {
 		 * Return the source of the type, or {@code null} if not known.
 		 * <p>The default implementation returns {@code null}.
 		 */
+		// 作用：返回该类型的“源头”对象。
+		// 如果类型来自类成员变量，返回 java.lang.reflect.Field。
+		// 如果类型来自方法参数，返回 org.springframework.core.MethodParameter。
 		@Nullable
 		default Object getSource() {
 			return null;
@@ -227,6 +239,8 @@ final class SerializableTypeWrapper {
 	/**
 	 * {@link TypeProvider} for {@link Type Types} obtained from a {@link Field}.
 	 */
+	// FieldTypeProvider 的核心任务是：将一个不可序列化的 java.lang.reflect.Field 包装成一个可序列化的对象。
+	// FieldTypeProvider 通过记录字段的“坐标”（类名 + 字段名），在反序列化时动态地把 Field 找回来，从而保证了 ResolvableType 在网络传输或持久化后的可用性。
 	@SuppressWarnings("serial")
 	static class FieldTypeProvider implements TypeProvider {
 
@@ -235,7 +249,8 @@ final class SerializableTypeWrapper {
 		private final Class<?> declaringClass;
 
 		private transient Field field;
-
+		// 接收一个原始的 Field 对象。
+		// 关键逻辑：它不仅保存了 field 本身，还提取并保存了 fieldName 和 declaringClass。这两个元数据是可序列化的，作为未来重建 field 的“存根”。
 		public FieldTypeProvider(Field field) {
 			this.fieldName = field.getName();
 			this.declaringClass = field.getDeclaringClass();
@@ -267,6 +282,8 @@ final class SerializableTypeWrapper {
 	/**
 	 * {@link TypeProvider} for {@link Type Types} obtained from a {@link MethodParameter}.
 	 */
+	// MethodParameterTypeProvider 的主要职责是：实现对 MethodParameter 的可序列化包装。
+	// 由于 MethodParameter 内部持有 Method 或 Constructor 对象的引用（这些反射对象同样不可序列化），该类通过记录方法的“签名信息”，确保在反序列化后能够精准地重新定位并重建该参数对象。
 	@SuppressWarnings("serial")
 	static class MethodParameterTypeProvider implements TypeProvider {
 
@@ -321,6 +338,9 @@ final class SerializableTypeWrapper {
 	/**
 	 * {@link TypeProvider} for {@link Type Types} obtained by invoking a no-arg method.
 	 */
+	// MethodInvokeTypeProvider 的作用是：通过执行一个“无参方法”来动态获取类型信息。
+	// 在处理复杂的泛型时（例如 WildcardType 的上边界 getUpperBounds() 或 ParameterizedType 的参数列表 getActualTypeArguments()），这些信息本身就是通过调用 JDK 的 Type 接口方法获得的。
+	// 该类通过包装一个已有的 TypeProvider（作为调用目标）和一个 Method（要执行的操作），实现了对泛型内部组件的可序列化追踪。
 	@SuppressWarnings("serial")
 	static class MethodInvokeTypeProvider implements TypeProvider {
 
