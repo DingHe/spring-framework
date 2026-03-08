@@ -33,6 +33,10 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  * @since 2.0.3
  */
+// 继承自 InstantiationAwareBeanPostProcessor，在原本干预“实例化”的基础上，进一步增加了对 Bean 类型预测、构造函数选择以及解决循环依赖的核心能力。
+// 智能类型预测：在 Bean 真正被创建之前，提前告诉容器这个 Bean 最终会长成什么样（例如是否会被代理）。这对于某些需要根据类型进行依赖查找（Dependency Lookup）的场景至关重要。
+// 构造函数推断：这是 Spring 自动装配（Autowiring）构造函数的底层入口。它允许处理器决定应该调用哪个构造函数来创建 Bean 实例。
+// 循环依赖的终极杀手锏：通过 getEarlyBeanReference 方法，它支持在 Bean 尚未完全初始化时就暴露一个早期引用。这是 Spring 三级缓存机制解决循环依赖的关键点，特别是对于需要被 AOP 代理的循环依赖 Bean。
 public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationAwareBeanPostProcessor {
 
 	/**
@@ -46,6 +50,8 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * @return the type of the bean, or {@code null} if not predictable
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 */
+	// 执行时机：在 Bean 实例创建之前的任意时刻，当容器需要知道 Bean 类型时调用。
+	// 作用：尝试预测 Bean 的最终类型。它主要用于快速检查，不应包含复杂的计算。
 	@Nullable
 	default Class<?> predictBeanType(Class<?> beanClass, String beanName) throws BeansException {
 		return null;
@@ -63,6 +69,8 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @since 6.0
 	 */
+	// 执行时机：Spring 6.0 新增方法，作为 predictBeanType 的增强版。
+	// 作用：更明确地确定 Bean 的最终类型。
 	default Class<?> determineBeanType(Class<?> beanClass, String beanName) throws BeansException {
 		return beanClass;
 	}
@@ -75,6 +83,7 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * @return the candidate constructors, or {@code null} if none specified
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 */
+	// 执行时机：在 postProcessBeforeInstantiation 之后，但在真正调用构造函数 new 对象之前。
 	@Nullable
 	default Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, String beanName)
 			throws BeansException {
@@ -103,6 +112,7 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * (typically with the passed-in bean instance as default)
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 */
+	// 执行时机：在 Bean 实例化之后，但在填充属性之前，仅当发生循环依赖时被三级缓存中的 ObjectFactory 调用。
 	default Object getEarlyBeanReference(Object bean, String beanName) throws BeansException {
 		return bean;
 	}

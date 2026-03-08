@@ -40,18 +40,24 @@ package org.springframework.core;
  * @see org.springframework.core.annotation.Order
  * @see org.springframework.core.annotation.AnnotationAwareOrderComparator
  */
+// Ordered 接口的核心作用是为一组同类型的 Bean 提供一个排序权值。
+// 执行顺序控制：在 Spring 中，很多组件是以列表（List）或数组形式存在的，比如 BeanPostProcessor（后置处理器链）、Interceptor（拦截器链）或 Advice（通知）。当有多个组件同时起作用时，必须有一个标准来决定谁先运行，谁后运行。
+// 优先级定义：权值越小，优先级越高。这类似于现实生活中的“一等奖”比“二等奖”排在前面。
+
 public interface Ordered {
 
 	/**
 	 * Useful constant for the highest precedence value.
 	 * @see java.lang.Integer#MIN_VALUE
 	 */
+	// 作用：代表最高优先级。
 	int HIGHEST_PRECEDENCE = Integer.MIN_VALUE;
 
 	/**
 	 * Useful constant for the lowest precedence value.
 	 * @see java.lang.Integer#MAX_VALUE
 	 */
+	// 作用：代表最低优先级。
 	int LOWEST_PRECEDENCE = Integer.MAX_VALUE;
 
 
@@ -66,6 +72,10 @@ public interface Ordered {
 	 * @see #HIGHEST_PRECEDENCE
 	 * @see #LOWEST_PRECEDENCE
 	 */
+	// 获取当前对象的排序值（Order Value）。
+	// 数值越小，优先级越高（Highest Priority）。
+	// 数值越大，优先级越低（Lowest Priority）。
+	// 相等时：如果两个对象的 getOrder() 返回值相同，则它们的相对顺序是不确定的（通常取决于它们被注册到容器中的自然顺序）。
 	int getOrder();
 
 }

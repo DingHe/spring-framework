@@ -94,6 +94,11 @@ import org.springframework.util.StringUtils;
  * @see BeanNameAutoProxyCreator
  * @see DefaultAdvisorAutoProxyCreator
  */
+// AbstractAutoProxyCreator 是 Spring AOP 自动代理机制的灵魂类。它是一个抽象类，通过继承 ProxyProcessorSupport 并实现 SmartInstantiationAwareBeanPostProcessor 接口，将 AOP 代理逻辑无缝织入了 Spring Bean 的生命周期中。
+// 全自动代理：它作为一个 BeanPostProcessor，会在容器初始化每个 Bean 的过程中进行拦截。如果某个 Bean 符合切点条件，它会自动为其创建一个代理对象，而不需要开发者手动编写 ProxyFactoryBean。
+// 连接 AOP 与 IoC：它是 Spring 容器感知 AOP 配置的桥梁。它负责从容器中查找所有的 Advisor（通知器），并判断哪些 Advisor 应该应用到当前的 Bean 上。
+// 支持循环依赖：通过实现 getEarlyBeanReference，它解决了 AOP 代理对象在循环依赖场景下的注入问题（即确保注入的是代理对象而非原始对象）。
+
 @SuppressWarnings("serial")
 public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		implements SmartInstantiationAwareBeanPostProcessor, BeanFactoryAware {
@@ -102,6 +107,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * Convenience constant for subclasses: Return value for "do not proxy".
 	 * @see #getAdvicesAndAdvisorsForBean
 	 */
+	// 静态常量，子类返回此值表示该 Bean 不需要被代理。
 	@Nullable
 	protected static final Object[] DO_NOT_PROXY = null;
 
@@ -110,6 +116,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * "proxy without additional interceptors, just the common ones".
 	 * @see #getAdvicesAndAdvisorsForBean
 	 */
+	// 静态常量，表示仅使用通用拦截器进行代理，不添加特定拦截器。
 	protected static final Object[] PROXY_WITHOUT_ADDITIONAL_INTERCEPTORS = new Object[0];
 
 
@@ -117,6 +124,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	/** Default is global AdvisorAdapterRegistry. */
+	// 将各种类型的 Advice（通知）包装成标准 Advisor 的注册表。
 	private AdvisorAdapterRegistry advisorAdapterRegistry = GlobalAdvisorAdapterRegistry.getInstance();
 
 	/**
@@ -126,6 +134,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	private boolean freezeProxy = false;
 
 	/** Default is no common interceptors. */
+	// 指定一些通用的拦截器 Bean 名称，这些拦截器会应用到所有生成的代理上。
 	private String[] interceptorNames = new String[0];
 
 	private boolean applyCommonInterceptorsFirst = true;
@@ -135,13 +144,14 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 
 	@Nullable
 	private BeanFactory beanFactory;
-
+	// 记录那些通过自定义 TargetSource 创建的 Bean，这些 Bean 通常在实例化前就已经创建了代理。
 	private final Set<String> targetSourcedBeans = Collections.newSetFromMap(new ConcurrentHashMap<>(16));
-
+	// 缓存早期代理引用，主要用于处理循环依赖。
 	private final Map<Object, Object> earlyProxyReferences = new ConcurrentHashMap<>(16);
-
+	// 缓存生成的代理类的类型。
 	private final Map<Object, Class<?>> proxyTypes = new ConcurrentHashMap<>(16);
-
+	// 核心缓存。
+	// 记录哪些 Bean 已经处理过，以及是否需要被代理（true 需要，false 不需要）。
 	private final Map<Object, Boolean> advisedBeans = new ConcurrentHashMap<>(256);
 
 
@@ -268,7 +278,8 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		this.earlyProxyReferences.put(cacheKey, bean);
 		return wrapIfNecessary(bean, beanName, cacheKey);
 	}
-
+	// 执行时机：Bean 实例化之前。
+	// 作用：检查是否配置了自定义 TargetSourceCreator。如果是，则在此处直接创建代理并返回，从而短路 Spring 默认的实例化流程。
 	@Override
 	public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) {
 		Object cacheKey = getCacheKey(beanClass, beanName);
@@ -350,28 +361,35 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * @param cacheKey the cache key for metadata access
 	 * @return a proxy wrapping the bean, or the raw bean instance as-is
 	 */
+	// wrapIfNecessary 是 Spring AOP 自动代理的核心逻辑所在。它的任务是判断当前 Bean 是否需要增强，如果需要，就为它穿上“代理的外衣”。
 	protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
+		// 检查该 Bean 是否已经通过自定义的 TargetSourceCreator 创建过代理。
 		if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
 			return bean;
 		}
+		// 作用：如果在之前的决策中已经确定这个 Bean 不需要被代理（值为 Boolean.FALSE），则直接返回原始实例，提高处理效率。
 		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
 			return bean;
 		}
+		// 解读：判断是否为基础设施类或应跳过的类。
 		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
 			this.advisedBeans.put(cacheKey, Boolean.FALSE);
 			return bean;
 		}
 
 		// Create proxy if we have advice.
+		// 解读：调用抽象方法，获取适用于当前 Bean 的所有 Advisor（顾问/通知）。
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		if (specificInterceptors != DO_NOT_PROXY) {
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
+			// 调用 createProxy 方法创建真正的代理对象。
 			Object proxy = createProxy(
 					bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
+			// 保存代理类的类型并返回代理对象。
 			this.proxyTypes.put(cacheKey, proxy.getClass());
 			return proxy;
 		}
-
+		// 如果代码运行到这里，说明 getAdvicesAndAdvisorsForBean 返回了 null，即该 Bean 没有任何匹配的切面。于是将其标记为 FALSE（不需要代理），并返回原始 Bean。
 		this.advisedBeans.put(cacheKey, Boolean.FALSE);
 		return bean;
 	}
@@ -469,7 +487,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 
 		return (Class<?>) buildProxy(beanClass, beanName, specificInterceptors, targetSource, true);
 	}
-
+	// buildProxy 方法是 Spring AOP 创建代理对象的生产线。它负责整合所有的配置信息，利用 ProxyFactory 最终交付一个代理实例。
 	private Object buildProxy(Class<?> beanClass, @Nullable String beanName,
 			@Nullable Object[] specificInterceptors, TargetSource targetSource, boolean classOnly) {
 

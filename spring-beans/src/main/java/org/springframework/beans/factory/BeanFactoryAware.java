@@ -38,6 +38,11 @@ import org.springframework.beans.BeansException;
  * @see InitializingBean
  * @see org.springframework.context.ApplicationContextAware
  */
+// BeanFactoryAware 的核心作用是让 Bean 能够“感知”到管理它的容器（BeanFactory）。
+// 打破控制反转（IoC）的封闭性：通常情况下，Bean 是被动接受依赖注入（DI）的，它不知道自己身处哪个容器中。实现此接口后，Bean 主动获得了容器的引用。
+// 编程式依赖查找（Dependency Lookup）：虽然 Spring 推荐使用自动注入（@Autowired），但在某些特殊场景下（例如：需要根据运行时的参数动态获取不同类型的 Bean），Bean 可以通过持有的 BeanFactory 实例直接调用 getBean()。
+// 低级别容器访问：它提供的是对 BeanFactory 的访问，这比 ApplicationContextAware 更底层。它通常用于那些不需要完整的应用上下文功能（如国际化、事件广播），而只需要基础 Bean 管理功能的底层基础设施类。
+
 public interface BeanFactoryAware extends Aware {
 
 	/**
@@ -50,6 +55,7 @@ public interface BeanFactoryAware extends Aware {
 	 * @throws BeansException in case of initialization errors
 	 * @see BeanInitializationException
 	 */
+	// 作用：由 Spring 容器自动调用，将当前的容器实例注入到 Bean 中。
 	void setBeanFactory(BeanFactory beanFactory) throws BeansException;
 
 }

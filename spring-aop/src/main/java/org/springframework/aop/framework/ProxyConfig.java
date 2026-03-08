@@ -28,20 +28,25 @@ import org.springframework.util.Assert;
  * @author Juergen Hoeller
  * @see AdvisedSupport
  */
+// 统一配置标准：它作为所有代理创建者（如 ProxyFactory、AspectJAutoProxyCreator）的超类，确保了 Spring 在创建代理对象时，无论使用哪种方式，其配置行为都是一致的。
+// 决定代理策略：它通过几个关键的布尔标记，决定了 Spring 到底是使用 JDK 动态代理 还是 CGLIB 字节码生成。
+// 控制代理行为：它允许开发者配置代理是否可以暴露给线程上下文、配置是否允许在运行时修改等高级特性。
 public class ProxyConfig implements Serializable {
 
 	/** use serialVersionUID from Spring 1.2 for interoperability. */
 	private static final long serialVersionUID = -8409359707199703185L;
 
-
+	// 核心参数。
+	// 为 true 时强制使用 CGLIB 代理目标类；为 false 时优先使用 JDK 接口代理。
 	private boolean proxyTargetClass = false;
-
+	// 是否进行激进优化。在当前版本中，设置为 true 通常意味着强制使用 CGLIB 代理且跳过一些类验证。
 	private boolean optimize = false;
-
+	// 翻译为“不透明性”。
+	// 为 true 时，阻止将代理对象强制转换为 Advised 接口以查询其 AOP 状态。
 	boolean opaque = false;
-
+	// 是否将代理对象暴露到 AopContext 中（通过 ThreadLocal 存储）
 	boolean exposeProxy = false;
-
+	// 配置是否被“冻结”。冻结后，将不允许再动态添加或删除通知（Advice）。
 	private boolean frozen = false;
 
 

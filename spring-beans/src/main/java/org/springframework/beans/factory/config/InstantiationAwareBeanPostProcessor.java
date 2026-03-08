@@ -40,6 +40,14 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator#setCustomTargetSourceCreators
  * @see org.springframework.aop.framework.autoproxy.target.LazyInitTargetSourceCreator
  */
+// InstantiationAwareBeanPostProcessor 是 Spring 容器中一个非常强大且特殊的后置处理器接口。它是 BeanPostProcessor 的子接口。
+// 在理解这个类之前，必须先区分两个概念：实例化（Instantiation） 和 初始化（Initialization）。
+// 实例化：指在堆内存中创建对象实例（相当于 new 对象）。
+// 初始化：指对象已经创建好，开始注入属性、执行各种 init 方法。
+// 这个接口的主要作用是干预 Bean 的生命周期中“实例化”阶段的前后：
+// 短路实例化（Short-circuiting）：它允许你在 Spring 默认实例化逻辑运行之前，直接返回一个自定义的对象（通常是代理对象）。如果此方法返回了对象，Spring 将不再执行标准实例化过程。
+// 属性注入前的最后机会：在对象 new 出来之后，但在 Spring 开始自动装配（Autowiring）或设置显式属性值之前，提供回调。
+// 属性值修改：它允许你在属性应用到 Bean 之前，对属性值进行修改、添加或删除。
 public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 
 	/**
@@ -66,6 +74,9 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getBeanClass()
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getFactoryMethodName()
 	 */
+	// 执行时机：在目标 Bean 被实例化之前调用。
+	// 你可以通过这个方法返回一个对象（例如通过 RPC 获取的远程代理，或者通过 AOP 创建的代理）。
+	// 返回值：返回替代用的 Bean 实例，或返回 null（默认值）以继续执行 Spring 标准的实例化流程。
 	@Nullable
 	default Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
 		return null;
@@ -86,6 +97,10 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see #postProcessBeforeInstantiation
 	 */
+	// 执行时机：在 Bean 实例化之后，但在 Spring 属性填充（Property Population）之前调用。此时 Bean 已经有了实例，但属性还是空的（或默认值）。
+	// 用于在自动装配开始前执行自定义的字段注入逻辑。
+	// 控制是否需要继续填充属性。
+	// true（默认值）：允许 Spring 继续正常的属性注入过程。
 	default boolean postProcessAfterInstantiation(Object bean, String beanName) throws BeansException {
 		return true;
 	}
@@ -102,6 +117,9 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @since 5.1
 	 */
+	// 执行时机：在 Spring 准备将属性值应用到 Bean 之前调用。
+	// 这是对属性值进行最后检查或修改的地方。
+	// 核心应用：Spring 内部处理 @Autowired、@Resource 和 @Value 的核心逻辑（AutowiredAnnotationBeanPostProcessor）就是在此方法中完成的。它会在此处解析注解并查找依赖，最后返回修改后的属性值。
 	@Nullable
 	default PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
 			throws BeansException {

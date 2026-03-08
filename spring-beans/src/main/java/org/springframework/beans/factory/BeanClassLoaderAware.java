@@ -35,6 +35,9 @@ package org.springframework.beans.factory;
  * @see BeanFactoryAware
  * @see InitializingBean
  */
+// BeanClassLoaderAware 的核心作用是让 Bean 能够访问容器用于加载 Bean 定义的 ClassLoader。
+// 解决类可见性问题：在复杂的应用场景中（如 OSGi、热部署框架或共享库环境），框架类可能由“父加载器”加载，而应用类由“子加载器”加载。如果框架类需要通过类名反射创建应用类，直接使用 Class.forName() 可能会失败。通过此接口获取 ClassLoader，可以确保正确加载应用资源。
+// 动态代理与反射：许多底层基础设施（如 AOP 代理生成、序列化工具、动态脚本解析）在运行时需要生成新的类或寻找特定的类，这些操作都依赖于正确的 ClassLoader。
 public interface BeanClassLoaderAware extends Aware {
 
 	/**
@@ -47,6 +50,7 @@ public interface BeanClassLoaderAware extends Aware {
 	 * method or a custom init-method.
 	 * @param classLoader the owning class loader
 	 */
+	// 作用：由 Spring 容器自动调用，将当前 Bean Factory 使用的 ClassLoader 注入到 Bean 实例中。
 	void setBeanClassLoader(ClassLoader classLoader);
 
 }

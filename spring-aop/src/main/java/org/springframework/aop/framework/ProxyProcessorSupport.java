@@ -36,6 +36,11 @@ import org.springframework.util.ObjectUtils;
  * @see AbstractAdvisingBeanPostProcessor
  * @see org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator
  */
+// ProxyProcessorSupport 的主要职责是为“代理处理器”提供通用基础设施，具体体现在：
+// 代理接口的智能评估：它包含了一套算法（evaluateProxyInterfaces），用于决定一个 Bean 应该通过 JDK 动态代理（基于接口）还是 CGLIB（基于类）来创建。它能自动过滤掉那些不适合作为代理接口的系统回调接口。
+// 类加载器管理：确保代理类在正确的 ClassLoader 中生成，避免类可见性问题。
+// AOP 基础设施标识：它实现了 AopInfrastructureBean，确保其子类（如 AbstractAutoProxyCreator）本身不会被 AOP 错误地代理。
+// 排序控制：通过实现 Ordered 接口，允许控制代理处理器在 Spring Bean 后置处理器链中的执行顺序。
 @SuppressWarnings("serial")
 public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanClassLoaderAware, AopInfrastructureBean {
 
@@ -43,11 +48,12 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 	 * This should run after all other processors, so that it can just add
 	 * an advisor to existing proxies rather than double-proxy.
 	 */
+	// 该处理器在链中的顺序。默认为最低优先级，确保在其他 Bean 处理完成后再应用代理逻辑。
 	private int order = Ordered.LOWEST_PRECEDENCE;
-
+	// 用于创建和定义代理类的类加载器。
 	@Nullable
 	private ClassLoader proxyClassLoader = ClassUtils.getDefaultClassLoader();
-
+	// 标记位。用于判断用户是否手动设置过 proxyClassLoader，防止被容器默认值覆盖。
 	private boolean classLoaderConfigured = false;
 
 
@@ -72,6 +78,7 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 	 * {@link org.springframework.beans.factory.BeanFactory} for loading all bean classes.
 	 * This can be overridden here for specific proxies.
 	 */
+	// 手动指定用于生成代理类的 ClassLoader
 	public void setProxyClassLoader(@Nullable ClassLoader classLoader) {
 		this.proxyClassLoader = classLoader;
 		this.classLoaderConfigured = (classLoader != null);
@@ -101,7 +108,9 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 	 * @param beanClass the class of the bean
 	 * @param proxyFactory the ProxyFactory for the bean
 	 */
+	// 作用：检查目标类实现的接口，并将合适的接口添加到 ProxyFactory 中。
 	protected void evaluateProxyInterfaces(Class<?> beanClass, ProxyFactory proxyFactory) {
+		// 获取目标类实现的所有接口。
 		Class<?>[] targetInterfaces = ClassUtils.getAllInterfacesForClass(beanClass, getProxyClassLoader());
 		boolean hasReasonableProxyInterface = false;
 		for (Class<?> ifc : targetInterfaces) {
@@ -111,6 +120,7 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 				break;
 			}
 		}
+		// 如果发现“合理的”接口（有自定义方法且非系统回调），则将所有接口加入 ProxyFactory（走 JDK 代理）。
 		if (hasReasonableProxyInterface) {
 			// Must allow for introductions; can't just set interfaces to the target's interfaces only.
 			for (Class<?> ifc : targetInterfaces) {
@@ -118,6 +128,7 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 			}
 		}
 		else {
+			// 如果没有发现合理的接口，则强制设置 proxyTargetClass = true（走 CGLIB 代理）。
 			proxyFactory.setProxyTargetClass(true);
 		}
 	}
