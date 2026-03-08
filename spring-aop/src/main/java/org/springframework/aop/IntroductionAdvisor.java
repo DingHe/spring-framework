@@ -29,6 +29,10 @@ package org.springframework.aop;
  * @since 04.04.2003
  * @see IntroductionInterceptor
  */
+// 在 Spring AOP 的体系中，IntroductionAdvisor 是一个非常特殊的接口。如果说普通的 Advisor 是在现有方法上“加料”（增强），那么 IntroductionAdvisor 就是在给类“换骨”——它允许你为现有的类动态地添加新的接口实现。
+// 动态扩展能力：通过引介，你可以让一个原本没有实现某个接口的类，在运行期间“变”成实现了该接口。例如，你可以让所有的 Service 类动态实现一个 Auditable 接口，而无需修改源码。
+// 类级别的增强：普通的 AOP（如 MethodInterceptor）关注的是方法执行前后的拦截，而引介关注的是类结构的改变。
+// ClassFilter 驱动：由于引介是针对整个类的，所以它不需要方法级别的匹配（Pointcut 中的 MethodMatcher），只需要 ClassFilter 来决定哪些类需要被“注入”新接口。
 public interface IntroductionAdvisor extends Advisor, IntroductionInfo {
 
 	/**
@@ -38,6 +42,7 @@ public interface IntroductionAdvisor extends Advisor, IntroductionInfo {
 	 * matching doesn't make sense to introductions.
 	 * @return the class filter
 	 */
+	// 作用：返回一个类过滤器，用于确定哪些目标类应该应用这个引介。
 	ClassFilter getClassFilter();
 
 	/**

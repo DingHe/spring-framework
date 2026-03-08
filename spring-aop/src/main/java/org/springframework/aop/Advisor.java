@@ -33,6 +33,12 @@ import org.aopalliance.aop.Advice;
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
+// 在 Spring AOP 的体系结构中，Advisor 是一个非常高层且核心的接口。如果说 Advice（通知）解决了“做什么”的问题，那么 Advisor 解决的就是“谁在什么时候做什么”的完整封装。
+// Advisor 通常被称为**“切面”的底层持有者**。它的作用主要体现在以下几个方面：
+// Advice 的容器：它持有一个 Advice 对象。Advice 是具体的拦截逻辑（如日志、事务），而 Advisor 负责管理这个逻辑。
+// 解耦通知与应用范围：Advice 本身通常不包含“在哪里执行”的信息。Advisor 的子接口（如 PointcutAdvisor）会将 Advice 与 Pointcut（切点）结合。这样，同一个 Advice 逻辑可以被不同的 Advisor 包装，应用到不同的类或方法上。
+// 统一的抽象接口：Spring 并不直接操作各种零散的 BeforeAdvice 或 AfterAdvice，而是统一将它们包装成 Advisor。在创建代理对象时，Spring 只需遍历 Advisor 链即可。
+// 内部基础设施：正如代码注释所言，这个接口主要供 Spring 框架内部使用，用于支持不同类型的通知（包括 AOP 联盟标准的拦截器和 Spring 自定义的通知类型）。
 public interface Advisor {
 
 	/**
@@ -40,6 +46,7 @@ public interface Advisor {
 	 * {@link #getAdvice()} if no proper advice has been configured (yet).
 	 * @since 5.0
 	 */
+	// 这是一个空通知占位符。
 	Advice EMPTY_ADVICE = new Advice() {};
 
 
@@ -52,6 +59,7 @@ public interface Advisor {
 	 * @see ThrowsAdvice
 	 * @see AfterReturningAdvice
 	 */
+	// 作用：获取该切面所持有的 通知（Advice） 部分。
 	Advice getAdvice();
 
 	/**
@@ -65,6 +73,9 @@ public interface Advisor {
 	 * <p>As of 6.0.10, the default implementation returns {@code true}.
 	 * @return whether this advice is associated with a particular target instance
 	 */
+	// 作用：判断该通知是与特定的目标对象实例关联，还是被所有实例共享。
+	// 如果返回 true（共享模式）：该 Advisor 是单例的，所有被代理的目标对象共享同一个通知实例。
+	// 如果返回 false（多例/Mixin 模式）：每个被代理的目标对象实例都会拥有该通知的一个独立副本。
 	default boolean isPerInstance() {
 		return true;
 	}

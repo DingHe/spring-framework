@@ -39,13 +39,16 @@ import org.springframework.util.ClassUtils;
  * @author Juergen Hoeller
  * @since 11.11.2003
  */
+// 在 Spring AOP 中，大部分增强是针对方法的（拦截方法），而 引介 是针对 类 的。
+// 功能： 它允许你向现有的目标对象动态地添加新的接口实现，而无需修改目标类的源代码。
+// 范围： 默认情况下，该类实现的 matches(Class<?> clazz) 方法始终返回 true。这意味着只要你把这个 Advisor 配置给一个代理对象，它就会尝试将指定的接口“塞”进该目标类中。
 @SuppressWarnings("serial")
 public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFilter, Ordered, Serializable {
-
+	// 实际执行逻辑的通知对象。它负责处理新接口方法的调用。
 	private final Advice advice;
-
+	// 存储需要动态添加到目标类中的接口列表（使用 LinkedHashSet 保持插入顺序）。
 	private final Set<Class<?>> interfaces = new LinkedHashSet<>();
-
+	// 该 Advisor 在拦截器链中的执行顺序，默认是最低优先级（LOWEST_PRECEDENCE）。
 	private int order = Ordered.LOWEST_PRECEDENCE;
 
 
