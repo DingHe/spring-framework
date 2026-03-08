@@ -27,6 +27,8 @@ import org.springframework.core.env.Environment;
  * @since 3.1
  * @see org.springframework.core.env.EnvironmentCapable
  */
+// EnvironmentAware 是 Spring 3.1 引入的一个 Aware 感知接口。它允许 Bean 在初始化时获得当前应用运行的 Environment（环境） 引用。
+// 读取配置属性：通过 Environment 对象，Bean 可以动态地获取系统属性（System Properties）、环境变量（Environment Variables）以及配置文件（如 application.properties）中定义的属性值。
 public interface EnvironmentAware extends Aware {
 
 	/**

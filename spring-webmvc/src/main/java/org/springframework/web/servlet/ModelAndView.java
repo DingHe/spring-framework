@@ -44,6 +44,11 @@ import org.springframework.util.CollectionUtils;
  * @see HandlerAdapter#handle
  * @see org.springframework.web.servlet.mvc.Controller#handleRequest
  */
+// ModelAndView 是 Spring MVC 框架中一个非常经典的容器对象。正如其名，它的核心作用是将“模型数据（Model）”和“视图界面（View）”打包在一起，作为 Controller 处理完业务逻辑后的统一返回值。
+// 在 Web 开发中，Controller 需要完成两件事：
+// 准备数据：比如从数据库查出的用户信息。
+// 指定去向：比如告诉浏览器去显示 user_profile.jsp 还是 index.html。
+// ModelAndView 的存在使得 Controller 的方法可以只返回一个对象，就同时包含了这两部分信息。DispatcherServlet 拿到这个对象后，会根据其中的 View 信息找到页面，并把 Model 中的数据填充进去进行渲染。
 public class ModelAndView {
 
 	/** View instance or view name String. */

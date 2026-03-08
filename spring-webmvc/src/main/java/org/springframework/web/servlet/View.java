@@ -44,6 +44,12 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.web.servlet.view.AbstractView
  * @see org.springframework.web.servlet.view.InternalResourceView
  */
+// View 接口是 Spring MVC 视图技术的核心抽象。如果说 ModelAndView 是订单，那么 View 就是最终把菜做出来的“厨师”。
+// 在 Spring MVC 的多视图支持架构中，View 接口扮演着渲染器的角色：
+// 解耦控制器与渲染技术：Controller 只需要返回数据和逻辑视图名，而不需要关心最终是用 JSP、Thymeleaf、FreeMarker 还是生成 PDF/Excel。具体的渲染逻辑全部封装在 View 的实现类中。
+// 模型暴露：负责将 Model 中的数据转移到当前渲染技术能识别的地方（例如将数据存入 HttpServletRequest 的 Attribute 中，以便 JSP 使用）。
+// 响应生成：负责操作 HttpServletResponse 对象，将最终的二进制流或文本流写入响应体。
+// 无状态与线程安全：接口设计要求实现类必须是线程安全的，这样同一个 View 实例可以被多个请求并发调用。
 public interface View {
 
 	/**

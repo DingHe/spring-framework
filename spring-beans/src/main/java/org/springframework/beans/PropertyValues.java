@@ -34,6 +34,10 @@ import org.springframework.lang.Nullable;
  * @since 13 May 2001
  * @see PropertyValue
  */
+// PropertyValues 接口是 Spring Beans 模块中的一个基础接口。它主要用于封装一组 PropertyValue 对象，这些对象代表了要应用到某个 Bean 上的属性名和属性值的映射关系。
+// 属性值的集合持有者：它就像一个专门存放 Bean 属性配置的“容器”。在 Spring 容器启动并解析 XML 配置或注解时，属性信息会被抽象成 PropertyValues。
+// 解耦配置与填充：它将“属性有哪些值”这一信息从具体的 Bean 实例中解耦出来。Spring 的 BeanWrapper 会读取 PropertyValues 中的内容，并将其反射注入到目标 Bean 中。
+// 支持差异对比：它定义了对比两组属性差异的能力，这在处理属性更新或合并配置时非常有用。
 public interface PropertyValues extends Iterable<PropertyValue> {
 
 	/**

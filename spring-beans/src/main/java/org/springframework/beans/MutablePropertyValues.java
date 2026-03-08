@@ -41,9 +41,14 @@ import org.springframework.util.StringUtils;
  * @author Rob Harrop
  * @since 13 May 2001
  */
+// MutablePropertyValues 是 PropertyValues 接口的默认实现类。正如其名（Mutable），它允许程序在运行时动态地添加、修改、删除属性值。
+// 它是 Spring 容器内部构建 BeanDefinition 以及进行属性注入（Property Injection）时的核心数据结构。
+// 动态配置持有者：它不仅存储属性，还允许通过代码逻辑动态调整属性。
+// 深拷贝支持：提供构造函数，支持从现有的 PropertyValues 或 Map 中克隆数据，确保属性引用的独立性。
+// 支持合并逻辑：当添加重复属性时，支持根据 Mergeable 接口定义的规则进行值合并（常用于 List 或 Map 类型的属性合并）。
 @SuppressWarnings("serial")
 public class MutablePropertyValues implements PropertyValues, Serializable {
-
+	// 底层存储容器。
 	private final List<PropertyValue> propertyValueList;
 
 	@Nullable

@@ -56,6 +56,8 @@ import org.springframework.beans.factory.Aware;
  * @see org.springframework.context.support.ApplicationObjectSupport
  * @see org.springframework.beans.factory.BeanFactoryAware
  */
+// ApplicationContextAware 是 Spring 框架中 Aware（感知）系列接口中最核心、最常用的成员之一。它允许一个 Bean 获得运行它的 ApplicationContext（应用上下文）容器的引用。
+// 这个接口的核心作用是**“向 Bean 注入容器引用”**。
 public interface ApplicationContextAware extends Aware {
 
 	/**
@@ -71,6 +73,7 @@ public interface ApplicationContextAware extends Aware {
 	 * @throws BeansException if thrown by application context methods
 	 * @see org.springframework.beans.factory.BeanInitializationException
 	 */
+	// 作用：由 Spring 容器自动调用，将当前的 ApplicationContext 实例注入到实现该接口的 Bean 中。
 	void setApplicationContext(ApplicationContext applicationContext) throws BeansException;
 
 }

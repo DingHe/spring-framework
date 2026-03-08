@@ -54,6 +54,11 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping
  * @see org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
  */
+// HandlerMapping 是 Spring MVC 核心组件之一，它的地位相当于“导航员”或“路由表”。在 DispatcherServlet 接收到请求后，第一步就是要问 HandlerMapping：“这个请求该由谁（哪个 Controller）来处理？”
+// HandlerMapping 接口的主要职责是定义请求（Request）与处理器（Handler）之间的映射关系。
+// 寻找处理器：根据请求的 URL、方法（GET/POST）、Header 等信息，找到最合适的处理器（通常是某个 Controller 里的方法）。
+// 组装执行链：它不只是返回一个处理器对象，而是返回一个 HandlerExecutionChain。这个执行链包含了处理器本身以及一组针对该请求的拦截器（Interceptors）。
+// 高度可扩展：Spring 允许存在多个 HandlerMapping 实例（按优先级排序）。你可以基于路径、Session 状态、甚至 Cookie 来定制自己的映射逻辑。
 public interface HandlerMapping {
 
 	/**
@@ -61,6 +66,7 @@ public interface HandlerMapping {
 	 * handler for the best matching pattern.
 	 * @since 4.3.21
 	 */
+	// 这些属性本质上是 HttpServletRequest 中 Attribute 的 Key。当 HandlerMapping 匹配到请求后，会将解析出的有用信息存入 Request 中，方便后续的拦截器或处理器使用。
 	String BEST_MATCHING_HANDLER_ATTRIBUTE = HandlerMapping.class.getName() + ".bestMatchingHandler";
 
 	/**
@@ -148,6 +154,7 @@ public interface HandlerMapping {
 	 * other components.
 	 * @since 5.3
 	 */
+	// 指示此映射器是否启用了 PathPattern 解析（相比传统的 AntPathMatcher 更高效、语法更严格）。如果返回 true，DispatcherServlet 会预先解析并缓存请求路径，从而提高后续在拦截器和处理器中的访问效率。
 	default boolean usesPathPatterns() {
 		return false;
 	}
@@ -167,6 +174,11 @@ public interface HandlerMapping {
 	 * any interceptors, or {@code null} if no mapping found
 	 * @throws Exception if there is an internal error
 	 */
+	// 核心接口方法。
+	// 参数：当前的 HTTP 请求对象。
+	// 查找：根据内部策略（如 @RequestMapping 注解）查找与当前请求匹配的处理器（Handler）。
+	// 封装：将找到的处理器对象（可能是 HandlerMethod 或 HttpRequestHandler）与配置在该路径下的所有 HandlerInterceptor 拦截器封装在一起。
+	// 返回：返回这个执行链。如果返回 null，DispatcherServlet 会尝试下一个 HandlerMapping 插件。
 	@Nullable
 	HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception;
 

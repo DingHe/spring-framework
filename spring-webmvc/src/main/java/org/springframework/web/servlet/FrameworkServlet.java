@@ -140,6 +140,10 @@ import org.springframework.web.util.WebUtils;
  * @see #setContextInitializerClasses
  * @see #setNamespace
  */
+// 整合 Spring 应用上下文：它的核心职责是为每一个 Servlet 实例管理一个独立的 WebApplicationContext（通常称为子容器或 Servlet 容器）。
+// 生命周期管理：负责初始化、刷新以及销毁该 Web 上下文，并将其与 Root 上下文（由 ContextLoaderListener 创建）关联。
+// 请求处理的基石：它通过 processRequest 方法统一处理所有的 HTTP 请求，提供了请求上下文（如 LocaleContext、RequestAttributes）的绑定与清理。
+// 事件发布：在请求处理完成（无论成功或失败）后，发布 ServletRequestHandledEvent 事件。
 @SuppressWarnings("serial")
 public abstract class FrameworkServlet extends HttpServletBean implements ApplicationContextAware {
 
@@ -148,89 +152,120 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	 * given the name "test" in a context, the namespace used by the servlet will
 	 * resolve to "test-servlet".
 	 */
+	// 默认命名空间后缀（"-servlet"）。如果 Servlet 名为 "app"，默认命名空间为 "app-servlet"。
 	public static final String DEFAULT_NAMESPACE_SUFFIX = "-servlet";
 
 	/**
 	 * Default context class for FrameworkServlet.
 	 * @see org.springframework.web.context.support.XmlWebApplicationContext
 	 */
+	// 默认上下文类，即 XmlWebApplicationContext
 	public static final Class<?> DEFAULT_CONTEXT_CLASS = XmlWebApplicationContext.class;
 
 	/**
 	 * Prefix for the ServletContext attribute for the WebApplicationContext.
 	 * The completion is the servlet name.
 	 */
+	// 存储在 ServletContext 中属性名的前缀。
 	public static final String SERVLET_CONTEXT_PREFIX = FrameworkServlet.class.getName() + ".CONTEXT.";
 
 	/**
 	 * Any number of these characters are considered delimiters between
 	 * multiple values in a single init-param String value.
 	 */
+	// 解析初始化参数（如多个配置文件路径）时使用的分隔符（逗号、分号、空格等）。
 	private static final String INIT_PARAM_DELIMITERS = ",; \t\n";
 
 	/**
 	 * HTTP methods supported by {@link jakarta.servlet.http.HttpServlet}.
 	 */
+	// 标准 HTTP 方法集合。
 	private static final Set<String> HTTP_SERVLET_METHODS =
 			Set.of("DELETE", "HEAD", "GET", "OPTIONS", "POST", "PUT", "TRACE");
 
 
 	/** ServletContext attribute to find the WebApplicationContext in. */
+	// 指定从 ServletContext 中获取 WebApplicationContext 的属性键名。
 	@Nullable
 	private String contextAttribute;
 
 	/** WebApplicationContext implementation class to create. */
+	// 指定要创建的 Web 容器的类型。
+	// 默认值为 XmlWebApplicationContext.class。如果你想使用 Java 配置类，可以将其设置为 AnnotationConfigWebApplicationContext.class。
 	private Class<?> contextClass = DEFAULT_CONTEXT_CLASS;
 
 	/** WebApplicationContext id to assign. */
+	// 作用：分配给 WebApplicationContext 的唯一标识符。
 	@Nullable
 	private String contextId;
 
 	/** Namespace for this servlet. */
+	// 定义当前 Servlet 的命名空间。
+	// 如果不显式设置，默认为 [servlet-name]-servlet。它决定了默认配置文件的加载路径（如 /WEB-INF/test-servlet.xml）。
 	@Nullable
 	private String namespace;
 
 	/** Explicit context config location. */
+	// 作用：显式指定 Spring 配置文件的路径。
 	@Nullable
 	private String contextConfigLocation;
 
 	/** Actual ApplicationContextInitializer instances to apply to the context. */
+	// 存储已经实例化的 ApplicationContextInitializer 对象。
+	// 这些初始化器会在容器刷新（refresh()）之前被调用，允许你通过编程方式配置环境（Environment）或激活特定的 Profile。
 	private final List<ApplicationContextInitializer<ConfigurableApplicationContext>> contextInitializers =
 			new ArrayList<>();
 
 	/** Comma-delimited ApplicationContextInitializer class names set through init param. */
+	// 存储初始化器类的全限定名（字符串形式）。
 	@Nullable
 	private String contextInitializerClasses;
 
 	/** Should we publish the context as a ServletContext attribute?. */
+	// 作用：决定是否将当前 Servlet 的 WebApplicationContext 发布到 ServletContext 中。
 	private boolean publishContext = true;
 
 	/** Should we publish a ServletRequestHandledEvent at the end of each request?. */
+	// 作用：决定是否在每个请求结束时发布 ServletRequestHandledEvent。
 	private boolean publishEvents = true;
 
 	/** Expose LocaleContext and RequestAttributes as inheritable for child threads?. */
+	// 作用：决定 LocaleContext 和 RequestAttributes 是否对子线程可见。
+	// 详细说明：默认 false。若设为 true，Spring 会使用 InheritableThreadLocal 存储上下文。
 	private boolean threadContextInheritable = false;
 
 	/** Should we dispatch an HTTP OPTIONS request to {@link #doService}?. */
+	// 决定是否将 HTTP OPTIONS 请求转发给 doService 方法。
+	// 默认 false（交由 HttpServlet 默认处理）。在 DispatcherServlet 中通常会开启，以便支持 CORS（跨域资源共享）预检请求。
 	private boolean dispatchOptionsRequest = false;
 
 	/** Should we dispatch an HTTP TRACE request to {@link #doService}?. */
+	// 决定是否将 HTTP TRACE 请求转发给 doService 方法。
+	// 默认 false。开启后允许通过 Spring 的拦截器链和 Controller 处理回显调试请求。
 	private boolean dispatchTraceRequest = false;
 
 	/** Whether to log potentially sensitive info (request params at DEBUG + headers at TRACE). */
+	// 是否记录请求详情（如参数和 Header）。
+	// 默认 false。开启后会在 DEBUG 级别记录参数，在 TRACE 级别记录 Header。由于这些信息可能包含密码、Token 等敏感数据，因此默认关闭。
 	private boolean enableLoggingRequestDetails = false;
 
 	/** WebApplicationContext for this servlet. */
+	// 当前 Servlet 关联的 Spring 容器实例。
+	// 这是 FrameworkServlet 的核心，所有的控制器（Controller）和处理器（Handler）都存储在这个容器中。
 	@Nullable
 	private WebApplicationContext webApplicationContext;
 
 	/** If the WebApplicationContext was injected via {@link #setApplicationContext}. */
+	// 标记容器是否是通过 setApplicationContext 注入的。
+	// 如果为 true，说明该 Servlet 是作为一个 Bean 注册到现有的容器中的，Spring 在初始化时会跳过某些自动创建容器的步骤。
 	private boolean webApplicationContextInjected = false;
 
 	/** Flag used to detect whether onRefresh has already been called. */
+	// 标记是否已接收到上下文刷新事件。
 	private volatile boolean refreshEventReceived;
 
 	/** Monitor for synchronized onRefresh execution. */
+	// 用于 onRefresh 执行过程的同步锁。
 	private final Object onRefreshMonitor = new Object();
 
 
@@ -525,8 +560,10 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	 * Overridden method of {@link HttpServletBean}, invoked after any bean properties
 	 * have been set. Creates this servlet's WebApplicationContext.
 	 */
+	// initServletBean 方法是在 Servlet 生命周期中的 init 阶段被调用的，标志着 Servlet 已经完成了基础配置，开始进入 Spring 上下文的构建阶段。
 	@Override
 	protected final void initServletBean() throws ServletException {
+		// 作用：向 Servlet 容器（如 Tomcat、Jetty）的原始日志系统输出初始化信息。
 		getServletContext().log("Initializing Spring " + getClass().getSimpleName() + " '" + getServletName() + "'");
 		if (logger.isInfoEnabled()) {
 			logger.info("Initializing Servlet '" + getServletName() + "'");
@@ -534,7 +571,10 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 		long startTime = System.currentTimeMillis();
 
 		try {
+			// 最重要的入口
+			// 负责寻找父容器（Root Context）、创建子容器（Servlet Context）、配置监听器、并调用 refresh() 方法刷新容器
 			this.webApplicationContext = initWebApplicationContext();
+			// 在 Spring 容器就绪后，给子类一个机会去初始化特定的策略组件（如视图解析器、处理器映射等）
 			initFrameworkServlet();
 		}
 		catch (ServletException | RuntimeException ex) {
@@ -564,14 +604,20 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	 * @see #setContextClass
 	 * @see #setContextConfigLocation
 	 */
+	// 负责 Spring 子容器（Servlet WebApplicationContext） 的建立、配置与激活。
+	// 该方法决定了当前 Servlet 如何获取或创建自己的“小世界”
 	protected WebApplicationContext initWebApplicationContext() {
+		// 获取根容器 (Root Context)
+		// 意义：根容器通常存放 Service、DAO、数据源等业务层 Bean。Spring MVC 的 Servlet 容器需要将此根容器设为父容器，以便在 Controller 中注入 Service。
 		WebApplicationContext rootContext =
 				WebApplicationContextUtils.getWebApplicationContext(getServletContext());
 		WebApplicationContext wac = null;
 
 		if (this.webApplicationContext != null) {
+			// 第一优先级：处理已注入的容器
 			// A context instance was injected at construction time -> use it
 			wac = this.webApplicationContext;
+			// 检查这个容器是否已经“刷新”（激活）。如果还没刷新，说明它是一个刚被实例化的“空壳”。
 			if (wac instanceof ConfigurableWebApplicationContext cwac && !cwac.isActive()) {
 				// The context has not yet been refreshed -> provide services such as
 				// setting the parent context, setting the application context id, etc
@@ -580,26 +626,32 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 					// the root application context (if any; may be null) as the parent
 					cwac.setParent(rootContext);
 				}
+				// 对该容器进行最后的配置（如设置 ID、环境变量等）并调用 refresh() 方法启动容器。
 				configureAndRefreshWebApplicationContext(cwac);
 			}
 		}
 		if (wac == null) {
+			// 第二优先级：在 ServletContext 中查找
 			// No context instance was injected at construction time -> see if one
 			// has been registered in the servlet context. If one exists, it is assumed
 			// that the parent context (if any) has already been set and that the
 			// user has performed any initialization such as setting the context id
+			// 去 ServletContext 的属性列表里查找是否已经存在指定的容器。这常用于多个 Servlet 共享同一个上下文的特殊配置。
 			wac = findWebApplicationContext();
 		}
 		if (wac == null) {
+			// 第三优先级：创建全新的容器
 			// No context instance is defined for this servlet -> create a local one
 			wac = createWebApplicationContext(rootContext);
 		}
-
+		// 初始化 MVC 组件 (onRefresh 钩子)
 		if (!this.refreshEventReceived) {
+			// Spring 容器在刷新完成后会发出事件。如果没有收到刷新完成的事件（可能因为容器是预先刷新好的，或者是不可配置的上下文），则需要手动触发。
 			// Either the context is not a ConfigurableApplicationContext with refresh
 			// support or the context injected at construction time had already been
 			// refreshed -> trigger initial onRefresh manually here.
 			synchronized (this.onRefreshMonitor) {
+				// 极其关键的扩展点。子类（如 DispatcherServlet）会在此方法中初始化 Spring MVC 的各种战略组件：如 HandlerMapping、HandlerAdapter、ViewResolver 等。
 				onRefresh(wac);
 			}
 		}
