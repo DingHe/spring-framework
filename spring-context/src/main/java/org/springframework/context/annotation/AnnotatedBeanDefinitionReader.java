@@ -46,14 +46,20 @@ import org.springframework.util.Assert;
  * @since 3.0
  * @see AnnotationConfigApplicationContext#register
  */
+// AnnotatedBeanDefinitionReader 是 Spring 中处理注解配置的核心底层组件。
+// 它不像 ClassPathBeanDefinitionScanner 那样去大海捞针（扫描包），而是专门负责精确打击——将你明确指定的 Java 类解析为 Spring 内部的 Bean 定义。
+// 编程式注册蓝图：它提供了一种编程式的方法，将带有注解的 Java 类（如 @Configuration、@Component 或普通的 POJO）转换为 BeanDefinition 并注册到容器中。
+// 注解解析中心：它负责识别类上的通用注解，如 @Scope（作用域）、@Primary（优先）、@Lazy（懒加载）、@Role 和 @Description。
+// 条件评估：它集成了 ConditionEvaluator，能够处理 @Conditional 注解。如果条件不满足，即使你手动注册该类，它也会跳过。
+// 基础设施搭建：在初始化时，它会自动向容器注册一组核心的后置处理器（如处理 @Autowired 和 @Configuration 的处理器），确保容器具备处理注解的能力。
 public class AnnotatedBeanDefinitionReader {
-
+	// 注册表。通常就是 DefaultListableBeanFactory，用于存放解析出来的 Bean 定义。
 	private final BeanDefinitionRegistry registry;
-
+	// 名称生成器。默认为 AnnotationBeanNameGenerator，负责根据类名生成 Bean ID。
 	private BeanNameGenerator beanNameGenerator = AnnotationBeanNameGenerator.INSTANCE;
-
+	// 作用域解析器。负责解析类上的 @Scope 注解（如 singleton, prototype）。
 	private ScopeMetadataResolver scopeMetadataResolver = new AnnotationScopeMetadataResolver();
-
+	// 条件计算器。用于判断类上的 @Conditional 条件是否成立，决定是否跳过注册。
 	private ConditionEvaluator conditionEvaluator;
 
 
@@ -246,24 +252,29 @@ public class AnnotatedBeanDefinitionReader {
 	 * {@link BeanDefinition}, e.g. setting a lazy-init or primary flag
 	 * @since 5.0
 	 */
+	// 负责将一个 Java 类（Class）从“源代码层面”转换为 Spring 容器内部用于生产对象的“施工图纸”（BeanDefinition）。
 	private <T> void doRegisterBean(Class<T> beanClass, @Nullable String name,
 			@Nullable Class<? extends Annotation>[] qualifiers, @Nullable Supplier<T> supplier,
 			@Nullable BeanDefinitionCustomizer[] customizers) {
-
+		// 创建一个基于注解的 Bean 定义对象。它不仅包含类名，还持有了该类的注解元数据（AnnotationMetadata），这使得 Spring 能够读取类上的 @Scope、@Lazy 等信息。
 		AnnotatedGenericBeanDefinition abd = new AnnotatedGenericBeanDefinition(beanClass);
+		// 条件过滤。检查类上是否存在 @Conditional 系列注解（如 @ConditionalOnProperty）。如果当前环境不符合注解要求的条件，则直接中断注册流程。
 		if (this.conditionEvaluator.shouldSkip(abd.getMetadata())) {
 			return;
 		}
-
+		// 打上标记。标记这是一个被明确注册的 Bean 候选者
 		abd.setAttribute(ConfigurationClassUtils.CANDIDATE_ATTRIBUTE, Boolean.TRUE);
+		// 设置回调工厂。如果传入了 supplier（通常是 Lambda 表达式），Spring 在创建该 Bean 实例时将直接调用此函数，而不是通过反射调用构造函数。
 		abd.setInstanceSupplier(supplier);
+		// 解析并设置作用域。读取类上的 @Scope 注解，确定它是单例（Singleton）、原型（Prototype）还是其他 Web 作用域。
 		ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(abd);
 		abd.setScope(scopeMetadata.getScopeName());
 		String beanName = (name != null ? name : this.beanNameGenerator.generateBeanName(abd, this.registry));
-
+		// 解析通用注解。处理类上的 @Lazy（延迟初始化）、@Primary（自动装配时优先）、@DependsOn（依赖顺序）、@Role（角色）和 @Description（描述）。
 		AnnotationConfigUtils.processCommonDefinitionAnnotations(abd);
 		if (qualifiers != null) {
 			for (Class<? extends Annotation> qualifier : qualifiers) {
+				// 如果是 Primary.class 或 Lazy.class，直接调用 setPrimary(true) 或 setLazyInit(true)。
 				if (Primary.class == qualifier) {
 					abd.setPrimary(true);
 				}

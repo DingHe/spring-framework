@@ -54,6 +54,13 @@ import org.aopalliance.aop.Advice;
  * @author Rod Johnson
  * @see Joinpoint
  */
+// Interceptor 的核心作用可以概括为以下几点：
+// 通用的拦截抽象：它是所有拦截器的顶层基接口。在 AOP 术语中，拦截器是一种特殊的 Advice（增强），它能够**捕获（拦截）**程序运行时的特定事件。
+// 连接点（Joinpoint）的处理器：当程序运行到某个特定的位置（如方法调用、构造函数执行、字段访问等）时，这些位置被物化为 Joinpoint 对象。Interceptor 的任务就是处理这些 Joinpoint。
+// 分层的职责链基础：虽然 Interceptor 接口本身依然是一个标记接口（不定义方法），但它定义了一个关键的层级：所有的拦截逻辑都必须支持对事件的“拦截”操作，这为后续形成拦截器链（Interceptor Chain）奠定了基础。
+// 解耦具体事件：它并不限制拦截什么。具体的拦截行为由其子接口定义。例如，它不关心是拦截方法还是拦截属性访问，它只是在语义上把“增强（Advice）”具体化为了“拦截（Interceptor）”。
+
+
 public interface Interceptor extends Advice {
 
 }

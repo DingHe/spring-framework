@@ -49,6 +49,10 @@ import org.springframework.util.Assert;
  * @see #suppressInterface
  * @see DelegatePerTargetObjectIntroductionInterceptor
  */
+// DelegatingIntroductionInterceptor 是 Spring AOP 中最常用的**引介（Introduction）**实现类。它通过“委派”模式，允许开发者轻松地为现有对象动态添加新的接口实现。
+// 实现 Mixin（混入）：它能将一个对象的功能“混入”到另一个对象中。例如，你可以让所有的 Service 类都动态实现一个 Auditable 接口，而无需修改源代码。
+// 方法分发（Dispatcher）：它充当一个交通警察的角色。当代理对象的方法被调用时，它判断该方法是属于“原始对象”的，还是属于“新引入接口”的。如果是后者，它就将调用转发给内部的 delegate 对象。
+// 简化引介开发：开发者只需继承此类并实现目标接口，或者直接传入一个实现类对象，剩下的接口注册和调用分发逻辑都由该类自动完成。
 @SuppressWarnings("serial")
 public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport
 		implements IntroductionInterceptor {
@@ -57,6 +61,7 @@ public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport
 	 * Object that actually implements the interfaces.
 	 * May be "this" if a subclass implements the introduced interfaces.
 	 */
+	// 作用：真正实现那些“新引入接口”的实例对象。
 	@Nullable
 	private Object delegate;
 
@@ -85,12 +90,16 @@ public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport
 	 * a "this" reference from one constructor to another.
 	 * @param delegate the delegate object
 	 */
+	// 私有初始化核心逻辑。
+	// 验证 delegate 非空并赋值。
+	// 调用父类 implementInterfacesOnObject 自动扫描 delegate 实现的所有接口并注册。
 	private void init(Object delegate) {
 		Assert.notNull(delegate, "Delegate must not be null");
 		this.delegate = delegate;
 		implementInterfacesOnObject(delegate);
 
 		// We don't want to expose the control interface
+		// 安全性过滤：调用 suppressInterface 压制 IntroductionInterceptor 和 DynamicIntroductionAdvice。这是为了防止代理对象对外暴露这些 AOP 框架内部的控制接口。
 		suppressInterface(IntroductionInterceptor.class);
 		suppressInterface(DynamicIntroductionAdvice.class);
 	}
@@ -101,10 +110,12 @@ public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport
 	 * behaviour in around advice. However, subclasses should invoke this
 	 * method, which handles introduced interfaces and forwarding to the target.
 	 */
+	// 作用：拦截代理对象的所有方法调用。
 	@Override
 	@Nullable
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		if (isMethodOnIntroducedInterface(mi)) {
+			// 分支一：引介方法：如果是新引入接口的方法，则使用 AopUtils.invokeJoinpointUsingReflection 直接在 delegate 对象上执行该方法
 			// Using the following method rather than direct reflection, we
 			// get correct handling of InvocationTargetException
 			// if the introduced method throws an exception.
@@ -120,7 +131,7 @@ public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport
 			}
 			return retVal;
 		}
-
+		// 分支二：原始方法：如果不是引介方法，则调用 doProceed(mi)。
 		return doProceed(mi);
 	}
 

@@ -27,6 +27,9 @@ import org.aopalliance.aop.Advice;
  * @author Rod Johnson
  * @see AfterAdvice
  */
+// BeforeAdvice 是 Spring AOP 体系中的一个标识接口（Marker Interface）。它定义了通知（Advice）发生的时机，即在目标操作执行之前。
+// 分类标识：它本身不包含任何方法，其存在的主要目的是为了将各种类型的“前置通知”归类。在 Spring 内部，通过 instanceof BeforeAdvice 就可以快速识别出所有需要在目标方法执行前触发的逻辑。
+// 设计扩展性：如注释所述，虽然目前 Spring 仅支持方法前置通知（MethodBeforeAdvice），但该接口的设计预留了未来支持字段前置通知（Field Advice）的可能性。
 public interface BeforeAdvice extends Advice {
 
 }

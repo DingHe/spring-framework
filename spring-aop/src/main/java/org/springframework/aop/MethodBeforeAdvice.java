@@ -28,6 +28,9 @@ import org.springframework.lang.Nullable;
  * @see AfterReturningAdvice
  * @see ThrowsAdvice
  */
+// MethodBeforeAdvice 是 Spring AOP 中最常用的通知类型之一，它代表了强类型的前置通知。相比于功能最全的环绕通知（Around Advice），它更简单、更安全。
+// 前置切入：专门用于在目标方法执行之前插入逻辑。
+// 非侵入性增强：它主要用于执行一些辅助操作，如日志记录、权限检查、参数校验或资源预加载。
 public interface MethodBeforeAdvice extends BeforeAdvice {
 
 	/**
@@ -40,6 +43,7 @@ public interface MethodBeforeAdvice extends BeforeAdvice {
 	 * allowed by the method signature. Otherwise the exception
 	 * will be wrapped as a runtime exception.
 	 */
+	// Method method 作用：当前正在被调用的目标方法对象。
 	void before(Method method, Object[] args, @Nullable Object target) throws Throwable;
 
 }

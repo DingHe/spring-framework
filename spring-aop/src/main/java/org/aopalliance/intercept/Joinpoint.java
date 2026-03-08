@@ -40,6 +40,10 @@ import javax.annotation.Nullable;
  * @author Rod Johnson
  * @see Interceptor
  */
+// 在 AOP（面向切面编程）术语中，Joinpoint（连接点） 代表程序执行过程中的一个特定点。
+// 运行时的“事件”：它是一个抽象的概念，代表了“调用一个方法”或“构造一个对象”这个动作本身。
+// 拦截器的纽带：在 Spring AOP 中，当一个方法被拦截时，Spring 会创建一个 Joinpoint 实例（通常是 MethodInvocation）并传递给拦截器链。
+// 控制执行流：它不仅包含目标方法的信息，还负责控制是否继续执行后续的拦截器或目标方法。
 public interface Joinpoint {
 
 	/**
@@ -49,6 +53,10 @@ public interface Joinpoint {
 	 * @return see the children interfaces' proceed definition
 	 * @throws Throwable if the joinpoint throws an exception
 	 */
+	// 作用：推进执行链。这是 AOP 逻辑中最核心的方法。
+	// 返回类型：Object（返回目标方法执行后的结果，如果方法返回 void 则为 null）。
+	// 在一个拦截器链中，调用 proceed() 会导致执行流跳转到下一个拦截器。
+	// 如果当前拦截器已经是链中的最后一个，调用 proceed() 将触发对目标对象真实方法的调用。
 	@Nullable
 	Object proceed() throws Throwable;
 
@@ -57,6 +65,10 @@ public interface Joinpoint {
 	 * <p>For instance, the target object for an invocation.
 	 * @return the object (can be null if the accessible object is static)
 	 */
+	// 作用：获取当前持有连接点的对象（目标对象）。
+	// 它返回的是被代理的那个真实目标对象实例。
+	// 如果拦截的是一个静态方法（static method），该方法将返回 null。
+	// 在拦截器中，如果你需要访问目标对象的其他属性或方法，可以通过此方法获取引用。
 	@Nullable
 	Object getThis();
 
@@ -65,6 +77,10 @@ public interface Joinpoint {
 	 * <p>The static part is an accessible object on which a chain of
 	 * interceptors is installed.
 	 */
+	// 作用：获取连接点的静态部分。
+	// “静态部分”是指在编写代码时就已经确定的元数据。
+	// 对于方法拦截，它通常返回一个 java.lang.reflect.Method 对象。
+	// 对于构造器拦截，它返回 java.lang.reflect.Constructor 对象。
 	@Nonnull
 	AccessibleObject getStaticPart();
 

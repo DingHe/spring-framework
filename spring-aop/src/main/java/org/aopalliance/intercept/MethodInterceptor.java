@@ -42,6 +42,10 @@ import javax.annotation.Nullable;
  *
  * @author Rod Johnson
  */
+// MethodInterceptor 的核心作用是实现环绕通知（Around Advice）。
+// 全周期控制：与“前置通知”或“后置通知”不同，拦截器持有对目标方法调用的完全控制权。它可以在目标方法执行前、执行后、甚至在抛出异常时执行自定义逻辑。
+// 链式调用（Chain of Responsibility）：在 Spring AOP 中，一个目标方法通常被多个拦截器包装。MethodInterceptor 通过调用 invocation.proceed()，将执行权传递给链中的下一个拦截器，直到最后到达目标方法。
+// 透明性：对于调用者来说，调用的依然是原接口的方法，但实际上执行的是拦截器提供的增强逻辑。这正是声明式事务（Transaction）、权限校验（Security）和日志监控（Logging）的底层实现基础。
 @FunctionalInterface
 public interface MethodInterceptor extends Interceptor {
 
