@@ -58,11 +58,18 @@ import org.springframework.lang.Nullable;
  * @see MergedAnnotations
  * @see MergedAnnotationPredicates
  */
+// MergedAnnotation 是 Spring Framework 5.2 版本引入的核心接口，用于表示从注解层次结构（包括元注解、别名同步、覆盖等）中“合并”后的单个注解视图。
+// 在 Spring 中，一个注解可能通过 @AliasFor 声明了别名，或者作为元注解被用于组合注解中。MergedAnnotation 能够处理这些复杂的继承和覆盖逻辑，为开发者提供一个最终的、一致的属性访问视图。
+// 统一视图：它不仅代表一个直接声明的注解，还可能代表一个元注解。它将不同层级的属性值进行合并（例如组合注解覆盖了元注解的属性）。
+// 别名处理：自动处理 @AliasFor 逻辑，无论你访问哪个别名属性，都能得到正确同步后的值。
+// 高性能访问：相比于原生的反射访问，它在内部进行了大量的缓存和优化，支持在不实例化（Synthesize）注解对象的情况下读取属性。
+// 防类加载优化：允许将 Class 类型的属性作为 String 返回，从而避免在扫描阶段不必要地加载尚未进入类路径的类。
 public interface MergedAnnotation<A extends Annotation> {
 
 	/**
 	 * The attribute name for annotations with a single element.
 	 */
+	// 常量字符串 "value"。这是 Java 注解中最常用的默认属性名称。
 	String VALUE = "value";
 
 
@@ -70,6 +77,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * Get the {@code Class} reference for the actual annotation type.
 	 * @return the annotation type
 	 */
+	// 返回该注解的实际 Java 类型（例如 Service.class）。
 	Class<A> getType();
 
 	/**
@@ -79,6 +87,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * of the {@link SearchStrategy} used.
 	 * @return {@code true} if the annotation is present
 	 */
+	// 判断注解是否存在（包括直接声明和作为元注解存在）
 	boolean isPresent();
 
 	/**
@@ -88,6 +97,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * or {@link Inherited @Inherited}.
 	 * @return {@code true} if the annotation is directly present
 	 */
+	// 是否是直接声明在该元素上的（非元注解，非继承）。
 	boolean isDirectlyPresent();
 
 	/**
@@ -97,6 +107,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * the annotation hierarchy.
 	 * @return {@code true} if the annotation is meta-present
 	 */
+	// 是否作为元注解存在（即通过其他注解间接引入）。
 	boolean isMetaPresent();
 
 	/**
@@ -108,6 +119,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * missing} annotation will always return a distance of {@code -1}.
 	 * @return the annotation distance or {@code -1} if the annotation is missing
 	 */
+	// 获取距离根注解的深度。直接声明为 0，元注解为 1，依此类推。
 	int getDistance();
 
 	/**
@@ -119,6 +131,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * @return the aggregate index (starting at {@code 0}) or {@code -1} if the
 	 * annotation is missing
 	 */
+	// 获取在聚合查询中的索引位置（用于排序，如父类与接口的优先级）。
 	int getAggregateIndex();
 
 	/**
@@ -133,6 +146,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * {@link #getRoot() root}.
 	 * @return the source, or {@code null}
 	 */
+	// 获取声明该注解的原始源对象（如 Method、Class 等）。
 	@Nullable
 	Object getSource();
 
@@ -144,6 +158,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * @return the meta-annotation source or {@code null}
 	 * @see #getRoot()
 	 */
+	// 如果是元注解，返回引入它的那个上级注解。
 	@Nullable
 	MergedAnnotation<?> getMetaSource();
 
@@ -153,6 +168,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * @return the root annotation
 	 * @see #getMetaSource()
 	 */
+	// 返回距离为 0 的根注解。
 	MergedAnnotation<?> getRoot();
 
 	/**
@@ -164,6 +180,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * @see #getRoot()
 	 * @see #getMetaSource()
 	 */
+	// 返回从当前注解到根注解路径上经过的所有注解类型列表。
 	List<Class<? extends Annotation>> getMetaTypes();
 
 
@@ -335,6 +352,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * @return the value as a class
 	 * @throws NoSuchElementException if there is no matching attribute
 	 */
+	// 获取类引用。
 	Class<?> getClass(String attributeName) throws NoSuchElementException;
 
 	/**
@@ -343,6 +361,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * @return the value as a class array
 	 * @throws NoSuchElementException if there is no matching attribute
 	 */
+	// 获取类引用。
 	Class<?>[] getClassArray(String attributeName) throws NoSuchElementException;
 
 	/**
@@ -352,6 +371,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * @return the value as an enum
 	 * @throws NoSuchElementException if there is no matching attribute
 	 */
+	// 获取枚举或嵌套注解。
 	<E extends Enum<E>> E getEnum(String attributeName, Class<E> type) throws NoSuchElementException;
 
 	/**
@@ -361,6 +381,7 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * @return the value as an enum array
 	 * @throws NoSuchElementException if there is no matching attribute
 	 */
+	// 获取枚举或嵌套注解。
 	<E extends Enum<E>> E[] getEnumArray(String attributeName, Class<E> type) throws NoSuchElementException;
 
 	/**
@@ -618,19 +639,28 @@ public interface MergedAnnotation<A extends Annotation> {
 	 * {@linkplain MergedAnnotation#asMap(Adapt...) Maps} or
 	 * {@link MergedAnnotation#asAnnotationAttributes(Adapt...) AnnotationAttributes}.
 	 */
+	// 为了在注解向数据结构（如 Map 或 AnnotationAttributes）转换时，提供灵活的数据类型转换策略。
+	// 在处理注解属性时，经常会遇到 Class 类型或嵌套的 Annotation 类型。直接返回这些对象可能会导致以下问题：
+	// 类加载风险：如果在扫描阶段访问了尚未在当前类路径下的 Class 属性，会抛出 ClassNotFoundException。
+	// 处理复杂性：嵌套注解如果自动合成（Synthesize）为 Proxy 对象，不方便进行通用的 Map 操作（如 JSON 序列化）。
+	// Adapt 枚举通过定义转换规则，允许开发者在导出数据时，将这些复杂类型“降级”为简单的字符串或嵌套的 Map。
 	enum Adapt {
 
 		/**
 		 * Adapt class or class array attributes to strings.
 		 */
+		// 将注解属性中的 Class<?> 或 Class<?>[] 适配为 String 或 String[]
+		// 行为：原本返回 MyConfig.class，开启此项后返回 "com.example.MyConfig"。
 		CLASS_TO_STRING,
 
 		/**
 		 * Adapt nested annotation or annotation arrays to maps rather
 		 * than synthesizing the values.
 		 */
+		// 将嵌套的注解（或者注解数组）适配为 Map<String, Object>。
+		// 行为：默认情况下，嵌套注解会被 synthesize() 还原为注解实例。开启此项后，嵌套的注解会被递归地转换成一个属性 Map。
 		ANNOTATION_TO_MAP;
-
+		// 作用：检查当前的枚举实例（this）是否存在于给定的适配数组中。
 		protected final boolean isIn(Adapt... adaptations) {
 			for (Adapt candidate : adaptations) {
 				if (candidate == this) {
@@ -646,9 +676,12 @@ public interface MergedAnnotation<A extends Annotation> {
 		 * @param annotationsToMap if {@link Adapt#ANNOTATION_TO_MAP} is included
 		 * @return a new {@link Adapt} array
 		 */
+		// 根据传入的布尔开关，快速创建一个 Adapt 数组。
 		public static Adapt[] values(boolean classToString, boolean annotationsToMap) {
 			EnumSet<Adapt> result = EnumSet.noneOf(Adapt.class);
+			// classToString: 如果为 true，结果中包含 CLASS_TO_STRING。
 			addIfTrue(result, Adapt.CLASS_TO_STRING, classToString);
+			// annotationsToMap: 如果为 true，结果中包含 ANNOTATION_TO_MAP。
 			addIfTrue(result, Adapt.ANNOTATION_TO_MAP, annotationsToMap);
 			return result.toArray(new Adapt[0]);
 		}

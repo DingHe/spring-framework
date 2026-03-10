@@ -141,6 +141,12 @@ import org.springframework.util.Assert;
  * @see MergedAnnotationPredicates
  * @see MergedAnnotationSelectors
  */
+// MergedAnnotations 是 Spring Framework 5.2 版本引入的核心接口，它是 Spring 注解编程模型的基石。
+// 该类的主要作用是提供对“合并注解（Merged Annotations）”集合的访问。
+// 在 Spring 中，一个注解的值可能不仅仅来源于它本身，还可能通过以下方式被“合并”或“覆盖”：
+// @AliasFor 声明：注解内部属性之间的别名，或对元注解属性的覆盖。
+// 元注解（Meta-Annotations）：例如 @PostMapping 是一个元注解，它组合了 @RequestMapping。当你检查 @PostMapping 时，MergedAnnotations 能让你同时看到并访问到 @RequestMapping 的属性，且这些属性已经根据别名规则进行了合并。
+// 层次结构搜索：它支持按照不同的策略（如 TYPE_HIERARCHY）在类继承体系、接口、甚至内部类中搜索注解。
 public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>> {
 
 	/**
@@ -150,6 +156,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * @param annotationType the annotation type to check
 	 * @return {@code true} if the annotation is present
 	 */
+	// 判断指定类型的注解是否存在（包括直接标注和元注解形式）
 	<A extends Annotation> boolean isPresent(Class<A> annotationType);
 
 	/**
@@ -160,6 +167,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * to check
 	 * @return {@code true} if the annotation is present
 	 */
+	// 同上，通过全类名判断。
 	boolean isPresent(String annotationType);
 
 	/**
@@ -168,6 +176,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * @param annotationType the annotation type to check
 	 * @return {@code true} if the annotation is directly present
 	 */
+	// 判断注解是否直接标注在目标元素上（不通过元注解合并）。
 	<A extends Annotation> boolean isDirectlyPresent(Class<A> annotationType);
 
 	/**
@@ -177,6 +186,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * to check
 	 * @return {@code true} if the annotation is directly present
 	 */
+	// 同上，通过全类名判断。
 	boolean isDirectlyPresent(String annotationType);
 
 	/**
@@ -186,6 +196,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * @param annotationType the annotation type to get
 	 * @return a {@link MergedAnnotation} instance
 	 */
+	// 获取指定类型“最接近”的一个注解。
 	<A extends Annotation> MergedAnnotation<A> get(Class<A> annotationType);
 
 	/**
@@ -198,6 +209,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * @return a {@link MergedAnnotation} instance
 	 * @see MergedAnnotationPredicates
 	 */
+	// 获取匹配类型且符合断言条件的注解。
 	<A extends Annotation> MergedAnnotation<A> get(Class<A> annotationType,
 			@Nullable Predicate<? super MergedAnnotation<A>> predicate);
 
@@ -214,6 +226,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * @see MergedAnnotationPredicates
 	 * @see MergedAnnotationSelectors
 	 */
+	// 获取注解，并使用选择器（Selector）在多个匹配项中择优。
 	<A extends Annotation> MergedAnnotation<A> get(Class<A> annotationType,
 			@Nullable Predicate<? super MergedAnnotation<A>> predicate,
 			@Nullable MergedAnnotationSelector<A> selector);
@@ -267,6 +280,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * @param annotationType the annotation type to match
 	 * @return a stream of matching annotations
 	 */
+	// 以 Stream 形式返回集合中所有的注解。排序规则是：先按聚合索引排，再按距离（Distance）排。
 	<A extends Annotation> Stream<MergedAnnotation<A>> stream(Class<A> annotationType);
 
 	/**
@@ -288,6 +302,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * earliest in the stream.
 	 * @return a stream of annotations
 	 */
+	// 以 Stream 形式返回集合中所有的注解。排序规则是：先按聚合索引排，再按距离（Distance）排。
 	Stream<MergedAnnotation<Annotation>> stream();
 
 
@@ -303,6 +318,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * annotations
 	 * @see #search(SearchStrategy)
 	 */
+	// 最常用的入口。从一个类、方法、字段等元素获取直接存在的注解。
 	static MergedAnnotations from(AnnotatedElement element) {
 		return from(element, SearchStrategy.DIRECT);
 	}
@@ -317,6 +333,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * element annotations
 	 * @see #search(SearchStrategy)
 	 */
+	// 指定搜索策略获取注解（如是否递归父类）。
 	static MergedAnnotations from(AnnotatedElement element, SearchStrategy searchStrategy) {
 		return from(element, searchStrategy, RepeatableContainers.standardRepeatables());
 	}
@@ -333,6 +350,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * element annotations
 	 * @see #search(SearchStrategy)
 	 */
+	// 增加对可重复注解容器的定义。
 	static MergedAnnotations from(AnnotatedElement element, SearchStrategy searchStrategy,
 			RepeatableContainers repeatableContainers) {
 
@@ -507,19 +525,21 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 *
 	 * @since 6.0
 	 */
+	// 流式搜索配置
+	// static final class Search 提供了一种流式 API 来精细化配置搜索行为：
 	static final class Search {
 
 		static final Predicate<Class<?>> always = clazz -> true;
 
 		static final Predicate<Class<?>> never = clazz -> false;
 
-
+		// 当前使用的搜索策略。
 		private final SearchStrategy searchStrategy;
-
+		// 一个断言，决定是否搜索外部类（用于内部类场景）
 		private Predicate<Class<?>> searchEnclosingClass = never;
-
+		// 处理可重复注解的容器
 		private RepeatableContainers repeatableContainers = RepeatableContainers.standardRepeatables();
-
+		// 过滤器，用于忽略某些注解（如 java.lang 包下的）
 		private AnnotationFilter annotationFilter = AnnotationFilter.PLAIN;
 
 
@@ -561,6 +581,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 		 * @see #withAnnotationFilter(AnnotationFilter)
 		 * @see #from(AnnotatedElement)
 		 */
+		// 配置是否搜索外部类。
 		public Search withEnclosingClasses(Predicate<Class<?>> searchEnclosingClass) {
 			Assert.notNull(searchEnclosingClass, "Predicate must not be null");
 			Assert.state(this.searchStrategy == SearchStrategy.TYPE_HIERARCHY,
@@ -578,6 +599,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 		 * @see #withAnnotationFilter(AnnotationFilter)
 		 * @see #from(AnnotatedElement)
 		 */
+		// 配置如何处理 @Repeatable 注解。
 		public Search withRepeatableContainers(RepeatableContainers repeatableContainers) {
 			Assert.notNull(repeatableContainers, "RepeatableContainers must not be null");
 			this.repeatableContainers = repeatableContainers;
@@ -593,6 +615,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 		 * @see #withRepeatableContainers(RepeatableContainers)
 		 * @see #from(AnnotatedElement)
 		 */
+		// 设置注解过滤器。
 		public Search withAnnotationFilter(AnnotationFilter annotationFilter) {
 			Assert.notNull(annotationFilter, "AnnotationFilter must not be null");
 			this.annotationFilter = annotationFilter;
@@ -612,6 +635,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 		 * @see #withAnnotationFilter(AnnotationFilter)
 		 * @see MergedAnnotations#from(AnnotatedElement, SearchStrategy, RepeatableContainers, AnnotationFilter)
 		 */
+		// 执行搜索并返回 MergedAnnotations 实例。
 		public MergedAnnotations from(AnnotatedElement element) {
 			return MergedAnnotations.from(element, this.searchStrategy, this.searchEnclosingClass,
 					this.repeatableContainers, this.annotationFilter);
@@ -627,6 +651,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 	 * <p>Each strategy creates a different set of aggregates that will be
 	 * combined to create the final {@link MergedAnnotations}.
 	 */
+	// 搜索策略
 	enum SearchStrategy {
 
 		/**
@@ -634,6 +659,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 		 * {@link Inherited @Inherited} annotations and without searching
 		 * superclasses or implemented interfaces.
 		 */
+		// 只查找直接声明的注解，不考虑 @Inherited，也不搜索父类或接口。
 		DIRECT,
 
 		/**
@@ -644,6 +670,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 		 * all other {@linkplain AnnotatedElement annotated elements}.
 		 * <p>This strategy does not search implemented interfaces.
 		 */
+		// 查找直接声明的注解，并包含符合 Java 标准 @Inherited 规则的父类注解。
 		INHERITED_ANNOTATIONS,
 
 		/**
@@ -653,6 +680,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 		 * {@link Inherited @Inherited}.
 		 * <p>This strategy does not search implemented interfaces.
 		 */
+		// 查找直接声明和所有父类中的注解（无论是否标注了 @Inherited），但不查找接口。
 		SUPERCLASS,
 
 		/**
@@ -665,6 +693,7 @@ public interface MergedAnnotations extends Iterable<MergedAnnotation<Annotation>
 		 * <p>Superclass and enclosing class annotations do not need to be
 		 * meta-annotated with {@link Inherited @Inherited}.
 		 */
+		// 最全面的搜索，包含父类、实现的所有接口。配合 Search 内部类甚至可以搜索外部类（Enclosing Class）
 		TYPE_HIERARCHY
 
 	}

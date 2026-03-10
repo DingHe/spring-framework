@@ -33,22 +33,26 @@ import org.springframework.util.Assert;
  * @since 5.2
  * @param <A> the annotation type
  */
+// AbstractMergedAnnotation 是一个抽象基类，旨在为 MergedAnnotation 的具体实现提供通用的逻辑支持。
+// 简化实现：通过提供大量的默认方法实现（尤其是类型安全的属性获取方法），减少了子类（如 TypeMappedAnnotation）的重复代码。
+// 类型转换与校验：封装了将注解属性转换为特定 Java 类型（如 int, String, Enum 等）的逻辑，并处理属性缺失时的异常。
+// 合成支持 (Synthesize)：实现了注解的“合成”缓存机制。合成注解是 Spring 的一项关键技术，它能确保 @AliasFor 等规则在运行时通过代理对象生效。
 abstract class AbstractMergedAnnotation<A extends Annotation> implements MergedAnnotation<A> {
-
+	// 作用：用于缓存已经生成的“合成注解”实例。
 	@Nullable
 	private volatile A synthesizedAnnotation;
 
-
+	// 判断注解是否直接声明在元素上。逻辑：必须存在 (isPresent) 且距离 (distance) 等于 0。
 	@Override
 	public boolean isDirectlyPresent() {
 		return isPresent() && getDistance() == 0;
 	}
-
+	// 判断注解是否作为元注解存在。逻辑：必须存在且距离大于 0（即通过其他注解间接引入）。
 	@Override
 	public boolean isMetaPresent() {
 		return isPresent() && getDistance() > 0;
 	}
-
+	// 判断指定的属性值是否存在默认值。
 	@Override
 	public boolean hasNonDefaultValue(String attributeName) {
 		return !hasDefaultValue(attributeName);
@@ -232,6 +236,7 @@ abstract class AbstractMergedAnnotation<A extends Annotation> implements MergedA
 	 * @throws IllegalArgumentException if the source type is not compatible
 	 * @throws NoSuchElementException if the value is required but not found
 	 */
+	// 必须由子类实现。负责去底层存储（如反射结果或字节码解析结果）中真正查找属性值。
 	@Nullable
 	protected abstract <T> T getAttributeValue(String attributeName, Class<T> type);
 

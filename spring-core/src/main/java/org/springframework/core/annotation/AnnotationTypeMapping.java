@@ -49,6 +49,12 @@ import org.springframework.util.StringUtils;
  * @since 5.2
  * @see AnnotationTypeMappings
  */
+// 该类的主要作用是描述和管理单个注解与其根注解（Root Annotation）之间的映射关系。
+// 在 Spring 中，一个注解可能是直接标注在类上的（Root），也可能是作为其他注解的元注解（Meta-annotation）存在的。AnnotationTypeMapping 负责处理以下复杂逻辑：
+// 属性别名（@AliasFor）：处理同一注解内或跨注解层级的属性别名同步。
+// 属性覆盖（Overrides）：建立元注解属性被上层注解覆盖的路径。
+// 约定映射：处理早于 Spring 6.2 广泛使用的“基于名称一致”的隐式属性覆盖。
+// 合成准备：计算注解是否需要被“合成”（Synthesized），即通过代理对象来统一读取别名后的值。
 final class AnnotationTypeMapping {
 
 	private static final Log logger = LogFactory.getLog(AnnotationTypeMapping.class);
@@ -69,37 +75,37 @@ final class AnnotationTypeMapping {
 
 	private static final MirrorSet[] EMPTY_MIRROR_SETS = new MirrorSet[0];
 
-
+	// 父级映射。如果当前是元注解，则指向包含它的那个注解映射。
 	@Nullable
 	private final AnnotationTypeMapping source;
-
+	// 整个注解树的根节点映射。
 	private final AnnotationTypeMapping root;
-
+	// 距离根注解的深度。根注解为 0，直接元注解为 1，依此类推。
 	private final int distance;
-
+	// 当前映射对应的注解类型。
 	private final Class<? extends Annotation> annotationType;
-
+	// 从根到当前类型的完整路径列表。
 	private final List<Class<? extends Annotation>> metaTypes;
-
+	// 当前注解的实例对象（如果存在）。
 	@Nullable
 	private final Annotation annotation;
-
+	// 当前注解类型的所有属性方法包装对象。
 	private final AttributeMethods attributes;
-
+	// 内部类，管理同一注解内互为别名的属性组。
 	private final MirrorSets mirrorSets;
-
+	// 核心映射表：索引为当前属性，值为对应根注解属性的索引（处理显式别名）。
 	private final int[] aliasMappings;
-
+	// 约定映射表：处理基于同名的隐式覆盖映射。
 	private final int[] conventionMappings;
-
+	// 最终值映射表：记录属性值应该从哪个索引处获取。
 	private final int[] annotationValueMappings;
-
+	// 记录每个属性值的来源映射对象。
 	private final AnnotationTypeMapping[] annotationValueSource;
-
+	// 倒排索引：记录哪个目标方法被当前注解的哪些方法起别名了。
 	private final Map<Method, List<Method>> aliasedBy;
-
+	// 标识该注解是否包含复杂的别名或覆盖，需要动态代理合成。
 	private final boolean synthesizable;
-
+	// 用于验证所有 @AliasFor 是否都已正确链接。
 	private final Set<Method> claimedAliases = new HashSet<>();
 
 
@@ -677,39 +683,52 @@ final class AnnotationTypeMapping {
 	 * A collection of {@link MirrorSet} instances that provides details of all
 	 * defined mirrors.
 	 */
+	// 处理别名关系的“指挥部”：MirrorSets。如果说 MirrorSet 是一个具体的互助小组，那么 MirrorSets 就是管理所有小组的中心机构。
+	// 负责将注解中的属性（Attributes）分配到不同的镜像组中，并最终生成一张“解析图”，告诉系统每个属性最终应该取哪个位置的值。
+	// 属性归类：扫描注解属性，将所有参与了别名（Alias）关系的属性划分到对应的 MirrorSet 中。
+	// 映射管理：维护一个映射表（assigned），可以快速查出某个属性属于哪个镜像组。
+	// 全局解析：驱动所有内部的 MirrorSet 进行冲突检测和值仲裁，最终输出一份完整的属性索引重定向表。
 	class MirrorSets {
-
+		// 存储当前注解中所有唯一的镜像组实例。
+		// 初始为空数组 EMPTY_MIRROR_SETS。
 		private MirrorSet[] mirrorSets;
-
+		// 这是一个索引对齐数组，长度与注解属性总数一致。
 		private final MirrorSet[] assigned;
 
 		MirrorSets() {
 			this.assigned = new MirrorSet[attributes.size()];
 			this.mirrorSets = EMPTY_MIRROR_SETS;
 		}
-
+		// 建立镜像关系的核心方法
+		// 输入：一组彼此互为别名的属性方法集合（来自于对 @AliasFor 的解析）。
 		void updateFrom(Collection<Method> aliases) {
 			MirrorSet mirrorSet = null;
 			int size = 0;
 			int last = -1;
 			for (int i = 0; i < attributes.size(); i++) {
+				// 遍历所有属性，寻找属于 aliases 集合的属性。
 				Method attribute = attributes.get(i);
 				if (aliases.contains(attribute)) {
 					size++;
 					if (size > 1) {
+						// 动态创建组：当发现第二个及以上的关联属性时，创建一个新的 MirrorSet。
 						if (mirrorSet == null) {
 							mirrorSet = new MirrorSet();
 							this.assigned[last] = mirrorSet;
 						}
+						// 双向绑定：将这些属性在 assigned 数组中的对应位置指向该 MirrorSet。
 						this.assigned[i] = mirrorSet;
 					}
 					last = i;
 				}
 			}
 			if (mirrorSet != null) {
+				// 将这些属性在 assigned 数组中的对应位置指向该 MirrorSet
 				mirrorSet.update();
+				// 利用 LinkedHashSet 对 assigned 中的组进行去重
 				Set<MirrorSet> unique = new LinkedHashSet<>(Arrays.asList(this.assigned));
 				unique.remove(null);
+				// 更新 mirrorSets 数组
 				this.mirrorSets = unique.toArray(EMPTY_MIRROR_SETS);
 			}
 		}
@@ -721,20 +740,23 @@ final class AnnotationTypeMapping {
 		MirrorSet get(int index) {
 			return this.mirrorSets[index];
 		}
-
+		// 查找指定索引的属性是否被分配到了某个镜像组。这是外界查询属性归属的关键入口。
 		@Nullable
 		MirrorSet getAssigned(int attributeIndex) {
 			return this.assigned[attributeIndex];
 		}
-
+		// 生成最终解析结果的方法，返回一个 int[] 索引表。
 		int[] resolve(@Nullable Object source, @Nullable Object annotation, ValueExtractor valueExtractor) {
+			// 初始化索引表：默认 result[i] = i，即每个属性指向它自己。
 			int[] result = new int[attributes.size()];
 			for (int i = 0; i < result.length; i++) {
 				result[i] = i;
 			}
 			for (int i = 0; i < size(); i++) {
 				MirrorSet mirrorSet = get(i);
+				// 组内仲裁：遍历每一个镜像组（MirrorSet），调用其 resolve 方法（之前解析过的冲突检测和选值逻辑）
 				int resolved = mirrorSet.resolve(source, annotation, valueExtractor);
+				// 索引重定向：如果 MirrorSet 决定该组最终生效的是索引为 K 的属性，那么该组内所有成员在 result 表中的值都会被设置为 K。
 				for (int j = 0; j < mirrorSet.size; j++) {
 					result[mirrorSet.indexes[j]] = resolved;
 				}
@@ -746,12 +768,22 @@ final class AnnotationTypeMapping {
 		/**
 		 * A single set of mirror attributes.
 		 */
+		// Spring 处理注解“镜像属性”的核心算法所在。
+		// 在 Spring 注解模型中，镜像（Mirror） 是指两个或多个属性通过 @AliasFor 互为别名。
+		// 例如，在 @RequestMapping 中，value 属性和 path 属性互为镜像。
+		// MirrorSet 的主要作用是：
+		// 编组：将所有互为别名的属性归为一组。
+		// 冲突检测：在运行时检查用户是否为同一组镜像属性设置了不同的值。
+		// 结果仲裁（Resolve）：当一组镜像属性中有的设置了值，有的使用了默认值时，决定最终应该使用哪一个属性的值。
 		class MirrorSet {
-
+			// 作用：记录当前镜像组中包含的属性数量。
 			private int size;
-
+			// 存储属于该镜像组的属性在 attributes 列表中的索引位置。
+			// 初始化：长度固定为总属性数量，但在 update 方法中会被压缩有效长度。
 			private final int[] indexes = new int[attributes.size()];
-
+			// 同步索引状态。
+			// 遍历所属 MirrorSets 外部类的 assigned 数组（该数组记录了每个属性属于哪个 MirrorSet），
+			// 将指向当前对象的属性索引提取并存入自己的 indexes 数组中。
 			void update() {
 				this.size = 0;
 				Arrays.fill(this.indexes, -1);
@@ -762,21 +794,28 @@ final class AnnotationTypeMapping {
 					}
 				}
 			}
-
+			// 该类最重要的逻辑方法
+			// 用于在多个镜像属性中“选出”最终生效的那一个。
 			<A> int resolve(@Nullable Object source, @Nullable A annotation, ValueExtractor valueExtractor) {
 				int result = -1;
 				Object lastValue = null;
 				for (int i = 0; i < this.size; i++) {
+					// 循环处理该组内所有的属性索引
 					Method attribute = attributes.get(this.indexes[i]);
+					// 提取值：使用 valueExtractor 从原始数据（注解或 Map）中提取该属性的当前值。
 					Object value = valueExtractor.extract(attribute, annotation);
+					// 通过 isEquivalentToDefaultValue 判断该值是否为初始默认值。
 					boolean isDefaultValue = (value == null ||
 							isEquivalentToDefaultValue(attribute, value, valueExtractor));
+
 					if (isDefaultValue || ObjectUtils.nullSafeEquals(lastValue, value)) {
 						if (result == -1) {
 							result = this.indexes[i];
 						}
 						continue;
 					}
+					// 如果发现两个非默认值且不相等（例如用户同时设置了 value="/a" 和 path="/b"），则抛出 AnnotationConfigurationException。
+					// 这正是 Spring 报错“Different @AliasFor mirror values...”的源头。
 					if (lastValue != null && !ObjectUtils.nullSafeEquals(lastValue, value)) {
 						String on = (source != null) ? " declared on " + source : "";
 						throw new AnnotationConfigurationException(String.format(

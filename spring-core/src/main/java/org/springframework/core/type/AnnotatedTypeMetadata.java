@@ -43,6 +43,14 @@ import org.springframework.util.MultiValueMap;
  * @see AnnotationMetadata
  * @see MethodMetadata
  */
+// Spring 注解驱动编程模型（如组件扫描、配置类解析）的底层基石。
+// 该接口的主要作用是定义对特定元素（如类或方法）上的注解访问抽象。
+// 其核心价值体现在以下两点：
+// 屏蔽实现差异：它抽象了对注解的访问，底层的实现既可以是基于 Java 反射（StandardAnnotationMetadata），
+// 也可以是基于 ASM 字节码解析（AnnotationMetadataReadingVisitor）。
+// 这意味着 Spring 可以在不加载类（Class Loading）的情况下读取类上的注解信息，这对于提升启动速度和减少内存占用至关重要。
+// 统一处理合并注解：它提供了对 Spring “合并注解”机制的访问，能够自动处理 @AliasFor、元注解（Meta-annotations）以及属性覆盖（Overrides）等复杂逻辑。
+
 public interface AnnotatedTypeMetadata {
 
 	/**
@@ -51,6 +59,7 @@ public interface AnnotatedTypeMetadata {
 	 * @return merged annotations based on the direct annotations
 	 * @since 5.2
 	 */
+	// 获取底层元素上所有的注解细节。
 	MergedAnnotations getAnnotations();
 
 	/**
@@ -62,6 +71,7 @@ public interface AnnotatedTypeMetadata {
 	 * type to look for
 	 * @return whether a matching annotation is defined
 	 */
+	// 作用：判断底层元素是否直接标注了指定的注解，或者通过元注解的方式间图标注了该注解。
 	default boolean isAnnotated(String annotationName) {
 		return getAnnotations().isPresent(annotationName);
 	}
@@ -76,6 +86,8 @@ public interface AnnotatedTypeMetadata {
 	 * and the defined attribute value as Map value. This return value will be
 	 * {@code null} if no matching annotation is defined.
 	 */
+	// 作用：获取指定注解的属性键值对。
+	// 参数：annotationName 注解的全限定类名。
 	@Nullable
 	default Map<String, Object> getAnnotationAttributes(String annotationName) {
 		return getAnnotationAttributes(annotationName, false);
@@ -94,6 +106,8 @@ public interface AnnotatedTypeMetadata {
 	 * and the defined attribute value as Map value. This return value will be
 	 * {@code null} if no matching annotation is defined.
 	 */
+	// 作用：获取指定注解属性，并允许控制 Class 类型的表现形式。
+	// classValuesAsString：如果为 true，则将属性中的 Class 对象转换为 String（类名）。这在字节码扫描阶段非常有用，因为此时类可能还没被加载。
 	@Nullable
 	default Map<String, Object> getAnnotationAttributes(String annotationName,
 			boolean classValuesAsString) {
@@ -117,6 +131,7 @@ public interface AnnotatedTypeMetadata {
 	 * be {@code null} if no matching annotation is defined.
 	 * @see #getAllAnnotationAttributes(String, boolean)
 	 */
+	// 作用：获取元素上所有匹配类型的注解属性（例如处理可重复注解或在不同层级重复出现的元注解）。
 	@Nullable
 	default MultiValueMap<String, Object> getAllAnnotationAttributes(String annotationName) {
 		return getAllAnnotationAttributes(annotationName, false);
@@ -134,6 +149,7 @@ public interface AnnotatedTypeMetadata {
 	 * be {@code null} if no matching annotation is defined.
 	 * @see #getAllAnnotationAttributes(String)
 	 */
+	// 作用：获取所有匹配注解的属性，并支持 Class 转字符串。
 	@Nullable
 	default MultiValueMap<String, Object> getAllAnnotationAttributes(
 			String annotationName, boolean classValuesAsString) {

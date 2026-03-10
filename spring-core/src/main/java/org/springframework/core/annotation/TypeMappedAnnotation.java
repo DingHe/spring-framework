@@ -66,8 +66,13 @@ import org.springframework.util.ClassUtils;
  * @param <A> the annotation type
  * @see TypeMappedAnnotations
  */
+// 在 Spring Framework 的注解处理模型中，TypeMappedAnnotation 是 MergedAnnotation 接口最核心、最复杂的实现类。它负责处理注解的属性映射（Mapping）、别名合并（Alias/Mirror）以及元注解聚合。
+// 该类的核心职责是：根据预定义的映射规则，从原始数据源中提取并适配注解属性值。
+// 属性转换与适配：它不仅能从真实的 Annotation 实例中提取值，还能从 Map 或其他数据结构中提取，并自动处理类型转换（如 String 转 Class）。
+// 处理别名与镜像：它是处理 @AliasFor 的核心。它通过 AnnotationTypeMapping 知道哪些属性是镜像（Mirror），并确保在合并视图中，优先级最高的属性值覆盖其他属性。
+// 支持元注解：当处理组合注解（如 @Service 包含 @Component）时，它负责从根注解（Root）向元注解传递属性。
 final class TypeMappedAnnotation<A extends Annotation> extends AbstractMergedAnnotation<A> {
-
+	// 静态常量，存储各种基本类型的空数组，用于优化内存开销。
 	private static final Map<Class<?>, Object> EMPTY_ARRAYS = Map.of(
 		boolean.class, new boolean[0],
 		byte.class, new byte[0],
@@ -79,7 +84,7 @@ final class TypeMappedAnnotation<A extends Annotation> extends AbstractMergedAnn
 		short.class, new short[0],
 		String.class, new String[0]);
 
-
+	// 核心属性。定义了当前注解的结构、属性列表以及与其他注解的映射关系。
 	private final AnnotationTypeMapping mapping;
 
 	@Nullable

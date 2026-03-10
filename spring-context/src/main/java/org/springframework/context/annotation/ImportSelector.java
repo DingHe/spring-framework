@@ -58,6 +58,11 @@ import org.springframework.lang.Nullable;
  * @see ImportBeanDefinitionRegistrar
  * @see Configuration
  */
+// ImportSelector 是 Spring Framework 中一个极其重要的扩展点，它是实现 Spring Boot 自动配置（Auto-configuration）以及复杂模块化配置的核心机制。
+// ImportSelector 的核心作用是根据运行时上下文动态地决定要导入哪些 @Configuration 配置类。
+// 与静态的 @Import(MyConfig.class) 不同，ImportSelector 允许你编写 Java 代码来动态选择配置。Spring 会执行这些实现类的方法，将返回的类名数组视为额外的配置类进行加载。
+// 场景示例：比如 Spring Boot 的 EnableAutoConfiguration，它正是通过 AutoConfigurationImportSelector（ImportSelector 的实现）读取 spring.factories 或 spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports 文件，根据条件自动加载所需的 Bean 配置。
+
 public interface ImportSelector {
 
 	/**
@@ -65,6 +70,10 @@ public interface ImportSelector {
 	 * the {@link AnnotationMetadata} of the importing @{@link Configuration} class.
 	 * @return the class names, or an empty array if none
 	 */
+	// 实现类的逻辑核心。
+	// 它接收导入该选择器的配置类的元数据（AnnotationMetadata），并返回一组全限定类名字符串数组。
+	// importingClassMetadata：当前导入该选择器的类（通常带有 @Import 注解的类）的注解元数据。通过它，开发者可以读取该类上的注解属性，从而决定到底该“导入”哪些配置。
+	// 返回值是 String[]，即需要被导入的 @Configuration 类（或组件）的全限定类名。如果返回空数组，则表示不导入任何类。
 	String[] selectImports(AnnotationMetadata importingClassMetadata);
 
 	/**
@@ -77,6 +86,8 @@ public interface ImportSelector {
 	 * of transitively imported configuration classes, or {@code null} if none
 	 * @since 5.2.4
 	 */
+	// 提供一个过滤器，用于在处理导入的类时排除特定的候选者。
+	// 返回一个 Predicate<String>。如果该 Predicate 对某个类名返回 true，则该类将被过滤掉，不被考虑为配置类，甚至不会加载其字节码。
 	@Nullable
 	default Predicate<String> getExclusionFilter() {
 		return null;
