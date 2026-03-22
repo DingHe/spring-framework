@@ -39,26 +39,33 @@ import org.springframework.util.ObjectUtils;
  * @see PropertyValues
  * @see BeanWrapper
  */
+// 如果说 BeanDefinition 是一个 Bean 的“蓝图”，那么 PropertyValue 就是蓝图上标注的具体“零件信息”。
+// PropertyValue 的核心作用是持有单个 Bean 属性的名称和值。
+// 在 Spring 容器初始化 Bean 之前，配置信息（如 XML 中的 <property> 标签或注解中的值）会被解析并封装成一个个 PropertyValue 对象。
+// 解耦存储：它不直接修改目标对象，而是作为一个“中间载体”，存储属性名和原始值（可能是字符串、表达式等）。
+// 支持转换：它允许存储“原始值”和“转换后的值”。例如，XML 里写的 "10"（String），经过 BeanWrapper 处理后，转换后的值就是 10（Integer），这两个状态都可以在此对象中管理。
+// 灵活性：相比于简单的 Map<String, Object>，使用对象可以携带更多的元数据（如是否可选、来源信息、属性路径标记等）。
 @SuppressWarnings("serial")
 public class PropertyValue extends BeanMetadataAttributeAccessor implements Serializable {
-
+	// 必填。属性的名称（对应 Java Bean 的字段名或 Setter 方法名）。
 	private final String name;
-
+	// 属性的原始值。在转换之前，通常是配置中的原始字符串或对象引用。
 	@Nullable
 	private final Object value;
-
+	// 标记是否为“可选”。如果为 true，且目标类中没有对应的 Setter 方法，Spring 会忽略它而不报错。
 	private boolean optional = false;
-
+	// 标记该属性值是否已经过类型转换处理。
 	private boolean converted = false;
-
+	// 存储经过类型转换后的最终值（例如从 String 转换成了 User 对象）。
 	@Nullable
 	private Object convertedValue;
-
+	// 易失性标记。用于内部优化，指示该值是否真的需要执行类型转换。
 	/** Package-visible field that indicates whether conversion is necessary. */
 	@Nullable
 	volatile Boolean conversionNecessary;
 
 	/** Package-visible field for caching the resolved property path tokens. */
+	// 缓存标记。用于缓存解析后的属性路径（如 address.city）的内部令牌，提高反射效率。
 	@Nullable
 	transient volatile Object resolvedTokens;
 

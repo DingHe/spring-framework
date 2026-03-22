@@ -46,6 +46,14 @@ import java.beans.PropertyDescriptor;
  * @see org.springframework.validation.BeanPropertyBindingResult
  * @see org.springframework.validation.DataBinder#initBeanPropertyAccess()
  */
+// BeanWrapper 是最核心的接口之一。如果说 PropertyAccessor 定义了“如何访问属性”，那么 BeanWrapper 就是这个行为的具体执行者和管理者。
+// 它是对一个 Java 对象的“包装器”，赋予了普通 POJO 对象强大的“自省”和“动态操作”能力。
+// BeanWrapper 是 Spring 低层 JavaBean 基础设施的中央接口。它的主要作用包括：
+// 对象包装与代理：它包装了一个具体的 Java 实例，充当该实例的“操作手”。
+// JavaBeans 规范实现：它遵循标准 JavaBeans 内省（Introspection）机制，能够分析并操作 Getter/Setter 方法。
+// 级联属性操作：支持对无限深度的嵌套属性（如 user.office.address.street）进行读写。
+// 自动集合增长：在设置值时，如果目标集合或数组太小，它可以自动扩容以防止越界异常。
+// 类型转换集成：通过继承自 PropertyEditorRegistry 和 ConfigurablePropertyAccessor，它能自动将字符串（如从配置文件读入的）转换为目标属性所需的类型（如 Date、URL 等）。
 public interface BeanWrapper extends ConfigurablePropertyAccessor {
 
 	/**
@@ -53,22 +61,26 @@ public interface BeanWrapper extends ConfigurablePropertyAccessor {
 	 * <p>Default is unlimited on a plain BeanWrapper.
 	 * @since 4.1
 	 */
+	// 设置数组或集合自动增长的阈值。
 	void setAutoGrowCollectionLimit(int autoGrowCollectionLimit);
 
 	/**
 	 * Return the limit for array and collection auto-growing.
 	 * @since 4.1
 	 */
+	// 获取当前的自动增长限制值。
 	int getAutoGrowCollectionLimit();
 
 	/**
 	 * Return the bean instance wrapped by this object.
 	 */
+	// 获取当前被 BeanWrapper 包装的原始 Java 对象实例。
 	Object getWrappedInstance();
 
 	/**
 	 * Return the type of the wrapped bean instance.
 	 */
+	// 获取被包装对象的 Class 类型。
 	Class<?> getWrappedClass();
 
 	/**
@@ -76,6 +88,7 @@ public interface BeanWrapper extends ConfigurablePropertyAccessor {
 	 * (as determined by standard JavaBeans introspection).
 	 * @return the PropertyDescriptors for the wrapped object
 	 */
+	// 获取被包装对象所有属性的 PropertyDescriptor 数组。
 	PropertyDescriptor[] getPropertyDescriptors();
 
 	/**
@@ -86,6 +99,7 @@ public interface BeanWrapper extends ConfigurablePropertyAccessor {
 	 * @return the property descriptor for the specified property
 	 * @throws InvalidPropertyException if there is no such property
 	 */
+	// 根据属性名获取特定的属性描述符。
 	PropertyDescriptor getPropertyDescriptor(String propertyName) throws InvalidPropertyException;
 
 }

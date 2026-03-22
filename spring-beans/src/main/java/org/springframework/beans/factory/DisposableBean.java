@@ -34,6 +34,10 @@ package org.springframework.beans.factory;
  * @see org.springframework.beans.factory.config.ConfigurableBeanFactory#destroySingletons()
  * @see org.springframework.context.ConfigurableApplicationContext#close()
  */
+// DisposableBean 接口的主要作用是允许 Bean 在被容器销毁之前执行特定的清理工作。
+// 在应用程序运行期间，Bean 可能会占用一些外部资源（如数据库连接、文件句柄、网络套接字或缓存数据）。当 Spring 容器（如 ApplicationContext）关闭时，它需要一种机制来通知这些 Bean 释放资源，以避免内存泄漏或资源锁死。
+// 对于 Singleton（单例） 类型的 Bean：在容器关闭（close()）时触发。
+// 对于 Scoped（作用域） 类型的 Bean（如 Request/Session）：在特定作用域结束时触发。
 public interface DisposableBean {
 
 	/**

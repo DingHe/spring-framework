@@ -30,6 +30,13 @@ import org.springframework.beans.factory.Aware;
  * @since 12.03.2004
  * @see ServletConfigAware
  */
+// 在 Spring Web 框架中，ServletContextAware 是一个非常关键的 回调接口。它属于 Spring 的 Aware 接口族（如 BeanNameAware, ApplicationContextAware 等），专门用于 Web 开发环境。
+// ServletContextAware 的核心作用是让一个 Bean 能够获取到原生 Servlet 容器的 ServletContext 对象。
+// 在 Java Web 开发中，ServletContext 代表了整个 Web 应用的上下文环境。通过它，开发者可以：
+// 获取 Web 应用的初始化参数（Context Init Parameters）。
+// 访问 Web 资源（如 /WEB-INF/ 下的文件）。
+// 获取文件的 MIME 类型。
+// 在全局范围内（Application Scope）存储和读取共享属性。
 public interface ServletContextAware extends Aware {
 
 	/**
@@ -42,6 +49,7 @@ public interface ServletContextAware extends Aware {
 	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
 	 * @see org.springframework.context.ApplicationContextAware#setApplicationContext
 	 */
+	// 该方法是容器用来向 Bean 传递 ServletContext 对象的“传送带”。当一个类实现了此接口，它通常会定义一个私有字段来保存这个传入的参数，以便在后续逻辑中使用。
 	void setServletContext(ServletContext servletContext);
 
 }

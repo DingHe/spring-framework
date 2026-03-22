@@ -33,6 +33,7 @@ package org.springframework.beans.factory;
  * @see BeanFactoryAware
  * @see InitializingBean
  */
+// BeanNameAware 的主要作用是允许 Bean 在初始化过程中获取它在 Spring 容器中注册的名称。
 public interface BeanNameAware extends Aware {
 
 	/**

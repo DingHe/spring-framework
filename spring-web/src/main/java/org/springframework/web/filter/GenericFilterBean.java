@@ -77,24 +77,29 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  * @see #initFilterBean
  * @see #doFilter
  */
+// GenericFilterBean 是 Spring Web 模块中一个非常重要的基类。它将传统的 Servlet Filter 与 Spring 的 Bean 生命周期管理完美结合在一起。
+// GenericFilterBean 的核心作用是将 Servlet 过滤器的配置参数（init-param）自动映射为该过滤器的 Bean 属性。
+// 自动属性映射：它利用 Spring 的 BeanWrapper 机制，读取 web.xml 或 FilterConfig 中的初始化参数，并自动调用子类对应的 Setter 方法进行赋值。
+// 弥合差异：它实现了多个 Spring 生命周期接口（如 InitializingBean, Aware 系列），使得一个普通的 Filter 可以像标准的 Spring Bean 一样感知容器环境。
+// 简化开发：开发者只需继承此类并实现 doFilter 方法，无需手动编写冗长的 filterConfig.getInitParameter(...) 代码。
 public abstract class GenericFilterBean implements Filter, BeanNameAware, EnvironmentAware,
 		EnvironmentCapable, ServletContextAware, InitializingBean, DisposableBean {
 
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
-
+	// 存储该 Bean 在 Spring 容器中的名称（通过 BeanNameAware 获取）。
 	@Nullable
 	private String beanName;
-
+	// 存储当前运行的环境配置，用于解析资源路径中的占位符。
 	@Nullable
 	private Environment environment;
-
+	// 存储 Web 应用上下文对象。
 	@Nullable
 	private ServletContext servletContext;
-
+	// 存储 Servlet 容器传入的原始过滤器配置对象。
 	@Nullable
 	private FilterConfig filterConfig;
-
+	// 存储必须提供的属性名称集合。如果配置中缺少这些参数，初始化将报错。
 	private final Set<String> requiredProperties = new HashSet<>(4);
 
 
@@ -167,6 +172,7 @@ public abstract class GenericFilterBean implements Filter, BeanNameAware, Enviro
 	 * @see #initFilterBean()
 	 * @see #init(jakarta.servlet.FilterConfig)
 	 */
+	// 实现 InitializingBean 接口。在 Bean 属性设置完成后调用 initFilterBean()，确保初始化逻辑被触发。
 	@Override
 	public void afterPropertiesSet() throws ServletException {
 		initFilterBean();
@@ -205,23 +211,34 @@ public abstract class GenericFilterBean implements Filter, BeanNameAware, Enviro
 	 * properties are missing), or if subclass initialization fails.
 	 * @see #initFilterBean
 	 */
+	// 连接 Servlet 标准接口 与 Spring 属性注入机制 的桥梁
+	// 该方法实现了 jakarta.servlet.Filter 接口的初始化方法。它的核心任务是：
+	// 捕获配置：接收来自 Servlet 容器（如 Tomcat）的配置信息。
+	// 属性转化：将 web.xml 或配置类中定义的 init-param 参数转换成该类的成员变量属性。
+	// 类型安全：支持复杂的类型转换（如将字符串路径转为 Resource 对象）。
+	// 扩展开放：在完成 Spring 风格的初始化后，触发子类的自定义逻辑。
 	@Override
 	public final void init(FilterConfig filterConfig) throws ServletException {
 		Assert.notNull(filterConfig, "FilterConfig must not be null");
-
+		// 存原始配置
 		this.filterConfig = filterConfig;
 
 		// Set bean properties from init parameters.
+		// 使用内部类 FilterConfigPropertyValues 将 filterConfig 中的所有键值对提取出来。
 		PropertyValues pvs = new FilterConfigPropertyValues(filterConfig, this.requiredProperties);
 		if (!pvs.isEmpty()) {
 			try {
+				// Spring 底层操作对象的工具，它可以利用反射调用 setXxx 方法。
 				BeanWrapper bw = PropertyAccessorFactory.forBeanPropertyAccess(this);
+				// 资源加载器与环境准备
 				ResourceLoader resourceLoader = new ServletContextResourceLoader(filterConfig.getServletContext());
 				Environment env = this.environment;
 				if (env == null) {
 					env = new StandardServletEnvironment();
 				}
+				// 如果你在配置中写了 configFile = "classpath:config.xml"，Spring 会自动将其转换成 Resource 对象并注入给子类的 setConfigFile(Resource res) 方法
 				bw.registerCustomEditor(Resource.class, new ResourceEditor(resourceLoader, env));
+				// 触发子类初始化
 				initBeanWrapper(bw);
 				bw.setPropertyValues(pvs, true);
 			}
@@ -324,6 +341,13 @@ public abstract class GenericFilterBean implements Filter, BeanNameAware, Enviro
 	/**
 	 * PropertyValues implementation created from FilterConfig init parameters.
 	 */
+	// 主要任务是扮演一个“搬运工”和“校验员”，将 Servlet 容器提供的原始配置参数转换为 Spring 能够识别的属性值对象。
+	// 这个类的核心逻辑在于：实现从 FilterConfig 到 PropertyValues 的转换。
+	// 数据桥接：Servlet 标准使用 FilterConfig.getInitParameter() 获取字符串配置，而 Spring 属性注入使用 PropertyValue 对象。该类将两者打通。
+	// 强制性校验：它不仅负责搬运数据，还负责检查开发者定义的“必填属性”是否在配置（如 web.xml 或 @WebFilter）中真实存在。如果缺失，它会直接阻止应用启动，确保系统安全。
+	// 该类本身没有定义额外的成员变量，但它操作了两个关键的数据源：
+	// config (FilterConfig)：来自 Servlet 容器的原始配置。
+	// requiredProperties (Set)：子类预先声明的必须存在的属性名集合。
 	@SuppressWarnings("serial")
 	private static class FilterConfigPropertyValues extends MutablePropertyValues {
 
@@ -336,7 +360,7 @@ public abstract class GenericFilterBean implements Filter, BeanNameAware, Enviro
 		 */
 		public FilterConfigPropertyValues(FilterConfig config, Set<String> requiredProperties)
 				throws ServletException {
-
+			// 如果子类指定了必填属性，就创建一个 missingProps 集合，并把所有必填项丢进去。
 			Set<String> missingProps = (!CollectionUtils.isEmpty(requiredProperties) ?
 					new HashSet<>(requiredProperties) : null);
 
@@ -344,6 +368,7 @@ public abstract class GenericFilterBean implements Filter, BeanNameAware, Enviro
 			while (paramNames.hasMoreElements()) {
 				String property = paramNames.nextElement();
 				Object value = config.getInitParameter(property);
+				// 核心：创建 PropertyValue 并添加到父类容器中
 				addPropertyValue(new PropertyValue(property, value));
 				if (missingProps != null) {
 					missingProps.remove(property);
@@ -351,6 +376,7 @@ public abstract class GenericFilterBean implements Filter, BeanNameAware, Enviro
 			}
 
 			// Fail if we are still missing properties.
+			// 遍历结束后，如果 missingProps 集合还不为空，说明有的必填项没在配置中找到。
 			if (!CollectionUtils.isEmpty(missingProps)) {
 				throw new ServletException(
 						"Initialization from FilterConfig for filter '" + config.getFilterName() +

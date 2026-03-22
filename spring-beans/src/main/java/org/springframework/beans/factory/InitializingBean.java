@@ -31,6 +31,13 @@ package org.springframework.beans.factory;
  * @see org.springframework.beans.factory.config.BeanDefinition#getPropertyValues()
  * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getInitMethodName()
  */
+// 在 Spring Framework 中，InitializingBean 是与 DisposableBean 相对的接口，它专注于 Bean 生命周期中的初始化阶段。
+// InitializingBean 接口的主要作用是允许 Bean 在其所有属性被容器设置完成后，执行自定义的初始化逻辑。
+// 当 Spring 容器通过反射完成了依赖注入（即设置了所有的 properties 和 references）之后，它需要一种方式告知 Bean：“你的原材料都准备好了，现在可以开始你自己的启动逻辑了。”
+// 核心功能：
+// 验证属性：检查某些强制性属性（Mandatory Properties）是否已经正确注入，如果没有，可以抛出异常阻止容器启动。
+// 资源预加载：例如在启动时建立数据库连接池、加载配置文件、预热缓存等。
+// 状态转换：将对象从“数据填充状态”转换为“就绪工作状态”。
 public interface InitializingBean {
 
 	/**
